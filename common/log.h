@@ -4,7 +4,6 @@
 #include <string>
 #include <queue>
 #include <memory>
-
 #include "config.h"
 #include "mutex"
 namespace talon {
@@ -115,7 +114,7 @@ namespace talon {
         int32_t m_pid{};  // 进程号
         int32_t m_thread_id{};  // 线程号
 
-        LogLevel m_level;     //日志级别
+        LogLevel m_level  = LogLevel::Info;     //日志级别
 
     };
 

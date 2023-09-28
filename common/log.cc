@@ -17,7 +17,6 @@ namespace talon {
         return g_logger;
     }
 
-
     void Logger::InitGlobalLogger() {
 
         LogLevel global_log_level = StringToLogLevel(Config::GetGlobalConfig()->m_log_level);
@@ -69,7 +68,6 @@ namespace talon {
         std::string time_str(buf);
         int ms = now_time.tv_usec / 1000;
         time_str = time_str + "." + std::to_string(ms);
-
 
         m_pid = get_pid();
         m_thread_id = get_thread_id();

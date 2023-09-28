@@ -7,6 +7,12 @@
 
 #include "pthread.h"
 #include "set"
+#include "functional"
+#include "queue"
+#include "mutex"
+#include "thread"
+#include "fd_event.h"
+#include "wakeup_fd_event.h"
 namespace talon{
     class Eventloop {
     public:
@@ -15,10 +21,22 @@ namespace talon{
         void loop();
         void wakeup();
         void stop();
+        void addEpollEvent(Fd_Event* event);
+        void deleteEpollEvent(Fd_Event* event);
+        bool isInLoopThread() const;
+        void addTask(std::function<void()>,bool a = false );
     private:
-        pid_t m_pid;
-        int m_epoll_fd{};
-        std::set<int> m_linsten_fds;
+        void dealWakeup();
+        void initWakeUpFdEevent();
+    private:
+        WakeUpFdEvent* m_wakeup_fd_event {nullptr};
+        pid_t m_thread_id{0};
+        int m_epoll_fd{0};
+        int m_wakeup_fd{0};
+        bool m_stop_flag;
+        std::set<int> m_listen_fds;
+        std::queue<std::function<void()>> m_pending_tasks;
+        static std::mutex m_mtx;
     };
 }
 

@@ -3,7 +3,8 @@
 //
 
 #include "fd_event.h"
-
+#include "fcntl.h"
+#include "unistd.h"
 #include <utility>
 #include "log.h"
 
@@ -12,7 +13,6 @@ talon::Fd_Event::Fd_Event(int fd) : m_fd(fd) {
 }
 
 talon::Fd_Event::~Fd_Event() {
-
 }
 
 std::function<void()> talon::Fd_Event::handler(talon::Fd_Event::TriggerEvent event_type) {

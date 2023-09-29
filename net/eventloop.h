@@ -29,7 +29,7 @@ namespace talon{
         void dealWakeup();
         void initWakeUpFdEevent();
     private:
-        WakeUpFdEvent* m_wakeup_fd_event {nullptr};
+        WakeUpFdEvent* m_p_wakeup_fd_event {nullptr};
         pid_t m_thread_id{0};
         int m_epoll_fd{0};
         int m_wakeup_fd{0};

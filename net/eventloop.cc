@@ -7,12 +7,9 @@
 #include <sys/eventfd.h>
 
 #include <cstring>
-#include <utility>
-
 #include "iostream"
 #include "log.h"
 #include "sys/epoll.h"
-#include "sys/socket.h"
 #include "util.h"
 
 static int g_epoll_max_timeout = 10000;
@@ -47,8 +44,7 @@ static int g_epoll_max_events = 100;
     DEBUGLOG("delete event success, fd[%d]", event->getFd());
 
 namespace talon {
-    std::mutex Eventloop::m_mtx;
-
+  // std::mutex Eventloop::m_mtx;
     static thread_local Eventloop *t_current_eventloop = nullptr;
 
     Eventloop::Eventloop() {
@@ -68,20 +64,6 @@ namespace talon {
             exit(Error);
         }
         DEBUGLOG("success create m_epoll_fd = %d",m_epoll_fd)
-//        if ((m_wakeup_fd = eventfd(0, EFD_NONBLOCK)) < 0) {
-//            ERRORLOG(
-//                    "failed to create event loop，m_wakeup_fd create failed err "
-//                    "info[%d]",
-//                    errno);
-//        }
-//        DEBUGLOG("success create m_wakeup_fd = %d",m_wakeup_fd)
-//        epoll_event event{};
-//        event.events = EPOLLIN;
-//        event.data.fd = m_wakeup_fd;
-//        if (epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, m_wakeup_fd, &event) < 0) {
-//            ERRORLOG("failed to create event loop， eventfd add err info[%d]",
-//                     errno);
-//        }
         t_current_eventloop = this;
         initWakeUpFdEevent();
         initTimer();
@@ -179,7 +161,9 @@ namespace talon {
         }
     }
 
-    void Eventloop::stop() {}
+    void Eventloop::stop() {
+        m_stop_flag = false;
+    }
 
     void Eventloop::dealWakeup() {}
 
@@ -194,7 +178,7 @@ namespace talon {
     }
 
     void Eventloop::deleteEpollEvent(Fd_Event *event) {
-        if (isInLoopThread()) {
+        if (isInLoopThread() ) {
             DELETE_TO_EPOLL();
         } else {
             auto cb = [this, event]() { DELETE_TO_EPOLL(); };
@@ -202,11 +186,11 @@ namespace talon {
         }
     }
 
-    bool Eventloop::isInLoopThread() const {  // 确定是loop线程
+    bool Eventloop::isInLoopThread() const {
         return get_thread_id() == m_thread_id;
     }
 
-    void Eventloop::addTask(const std::function<void()> task, bool is_wake_up) {
+    void Eventloop::addTask(const std::function<void()>& task, bool is_wake_up) {
         std::scoped_lock lock(m_mtx);
         m_pending_tasks.push(task);
         if (is_wake_up) {

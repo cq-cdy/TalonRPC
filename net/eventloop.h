@@ -25,7 +25,7 @@ namespace talon{
         void addEpollEvent(Fd_Event* event);
         void deleteEpollEvent(Fd_Event* event);
         bool isInLoopThread() const;
-        void addTask(std::function<void()>,bool a = false );
+        void addTask(const std::function<void()>&,bool a = false );
         void addTimerEvent(const TimerEvent::s_ptr&);
     private:
         void dealWakeup();
@@ -37,10 +37,10 @@ namespace talon{
         pid_t m_thread_id{0};
         int m_epoll_fd{0};
         int m_wakeup_fd{0};
-        bool m_stop_flag;
+        bool m_stop_flag{};
         std::set<int> m_listen_fds;
         std::queue<std::function<void()>> m_pending_tasks;
-        static std::mutex m_mtx;
+        std::mutex m_mtx;
         Timer* m_timer{nullptr};
     };
 }

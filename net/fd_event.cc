@@ -39,3 +39,7 @@ void talon::Fd_Event::listen(talon::Fd_Event::TriggerEvent event_type, std::func
     }
 }
 
+talon::Fd_Event::Fd_Event() {
+
+}
+

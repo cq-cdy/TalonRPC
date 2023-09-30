@@ -18,6 +18,7 @@ namespace talon {
             IN_EVENT = EPOLLIN,
             OUT_EVENT = EPOLLOUT,
         };
+        Fd_Event();
         Fd_Event(int fd);
         ~Fd_Event();
         std::function<void()> handler(TriggerEvent event_type);

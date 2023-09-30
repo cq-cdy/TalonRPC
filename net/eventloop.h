@@ -13,6 +13,7 @@
 #include "thread"
 #include "fd_event.h"
 #include "wakeup_fd_event.h"
+#include "timer.h"
 namespace talon{
     class Eventloop {
     public:
@@ -25,9 +26,12 @@ namespace talon{
         void deleteEpollEvent(Fd_Event* event);
         bool isInLoopThread() const;
         void addTask(std::function<void()>,bool a = false );
+        void addTimerEvent(const TimerEvent::s_ptr&);
     private:
         void dealWakeup();
         void initWakeUpFdEevent();
+        void initTimer();
+
     private:
         WakeUpFdEvent* m_p_wakeup_fd_event {nullptr};
         pid_t m_thread_id{0};
@@ -37,6 +41,7 @@ namespace talon{
         std::set<int> m_listen_fds;
         std::queue<std::function<void()>> m_pending_tasks;
         static std::mutex m_mtx;
+        Timer* m_timer{nullptr};
     };
 }
 

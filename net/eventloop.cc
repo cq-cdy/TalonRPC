@@ -7,6 +7,7 @@
 #include <sys/eventfd.h>
 
 #include <cstring>
+#include <utility>
 
 #include "iostream"
 #include "log.h"
@@ -83,6 +84,7 @@ namespace talon {
 //        }
         t_current_eventloop = this;
         initWakeUpFdEevent();
+        initTimer();
 
 
     }
@@ -93,6 +95,27 @@ namespace talon {
             delete m_p_wakeup_fd_event;
             m_p_wakeup_fd_event = nullptr;
         }
+        if(m_timer){
+            delete m_timer;
+            m_timer = nullptr;
+        }
+    }
+
+    void Eventloop::initTimer(){
+        m_timer = new Timer(); // set the timer_fd;
+        if (m_timer == nullptr) {
+            ERRORLOG("failed to create timer");
+            exit(Error);
+        }
+        addEpollEvent(m_timer); // to RBTree
+
+    }
+
+    void Eventloop::addTimerEvent(const TimerEvent::s_ptr& event) {
+        if (m_timer == nullptr) {
+            initTimer();
+        }
+        m_timer->addTimerEvent(event);
     }
 
 /*
@@ -142,10 +165,6 @@ namespace talon {
                     } else {
                         ERRORLOG("unknown trigger_event.events type")
                     }
-
-                    int fd = fd_event->getFd();
-
-
                 }
             }
         }

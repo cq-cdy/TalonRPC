@@ -6,21 +6,20 @@
 #include "eventloop.h"
 #include "fd_event.h"
 #include "log.h"
-#include "wakeup_fd_event.h"
-// 导入 socket 相关的头文件
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <unistd.h>
-
+#include "memory"
+#include "timer_event.h"
 #include <cstring>
+
 using namespace talon;
+
 int main() {
     Config::SetGlobalConfig("../conf/talon.xml");
     Logger::InitGlobalLogger();
 
-    auto* eventloop = new Eventloop();
+    auto *eventloop = new Eventloop();
     int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_fd < 0) {
         ERRORLOG("socket error");
@@ -31,7 +30,7 @@ int main() {
     addr.sin_family = AF_INET;
     addr.sin_port = htons(12345);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(listen_fd, (sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (bind(listen_fd, (sockaddr *) &addr, sizeof(addr)) < 0) {
         ERRORLOG("bind error");
         return -1;
     }
@@ -46,7 +45,7 @@ int main() {
         socklen_t client_addr_len = sizeof(client_addr);
         DEBUGLOG("before accept")
         int client_fd =
-            accept(listen_fd, (sockaddr*)&client_addr, &client_addr_len);
+                accept(listen_fd, (sockaddr *) &client_addr, &client_addr_len);
         if (client_fd < 0) {
             ERRORLOG("accept error");
             return;
@@ -57,6 +56,13 @@ int main() {
     });
     DEBUGLOG("accept_fd = %d", listen_fd);
     eventloop->addEpollEvent(&fd_event);
+    int i = 0;
+    auto timer_event = std::make_shared<talon::TimerEvent>(
+            1000, true, [&i]() {
+                INFOLOG("tirgger timer event,count = %d", i++);
+            }
+    );
+    eventloop->addTimerEvent(timer_event);
     eventloop->loop();
     return 0;
 }

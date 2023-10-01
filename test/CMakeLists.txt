@@ -1,5 +1,11 @@
 
-add_executable(test_eventloop   test_eventloop.cc)
+add_executable(test_eventloop   test_eventloop.cc
+        ../net/tcp/tcp_buffer.cc
+        ../net/tcp/tcp_buffer.h
+        ../net/tcp/net_addr.cc
+        ../net/tcp/net_addr.h
+        ../net/tcp/tcp_acceptor.cc
+        ../net/tcp/tcp_acceptor.h)
 add_executable(test_log  test_log.cc)
 
 

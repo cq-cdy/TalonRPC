@@ -67,8 +67,6 @@ namespace talon {
         t_current_eventloop = this;
         initWakeUpFdEevent();
         initTimer();
-
-
     }
 
     Eventloop::~Eventloop() {

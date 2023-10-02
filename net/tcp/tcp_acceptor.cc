@@ -10,6 +10,7 @@
 #include "net_addr.h"
 #include "tcp_acceptor.h"
 #include "cstring"
+#include "iostream"
 namespace talon {
     TcpAcceptor::TcpAcceptor(NetAddr::s_ptr local_addr): m_local_addr(local_addr) {
         if (!local_addr->checkValid()) {
@@ -17,6 +18,8 @@ namespace talon {
             exit(0);
         }
         m_family = m_local_addr->getFamily();
+
+
         m_listenfd = socket(m_family,SOCK_STREAM,0);
 
         if (m_listenfd < 0) {
@@ -46,7 +49,7 @@ namespace talon {
 
     }
 
-    std::pair<int, NetAddr::s_ptr> TcpAcceptor::accept() {
+    std::pair<int, NetAddr::s_ptr> TcpAcceptor::accept() const {
         if (m_family == AF_INET) {
             sockaddr_in client_addr{};
             memset(&client_addr, 0, sizeof(client_addr));
@@ -67,7 +70,7 @@ namespace talon {
 
     }
 
-    int TcpAcceptor::getListenFd() {
+    int TcpAcceptor::getListenFd() const {
         return m_listenfd;
     }
 } // talon

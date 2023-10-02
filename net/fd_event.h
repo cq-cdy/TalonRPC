@@ -21,6 +21,8 @@ namespace talon {
         Fd_Event();
         Fd_Event(int fd);
         ~Fd_Event();
+        void setNonBlock();
+        void cancle(TriggerEvent);
         std::function<void()> handler(TriggerEvent event_type);
         void listen(TriggerEvent event_type,std::function<void()>);
         int getFd() const{

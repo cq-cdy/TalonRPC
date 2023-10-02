@@ -43,3 +43,21 @@ talon::Fd_Event::Fd_Event() {
 
 }
 
+void talon::Fd_Event::setNonBlock() {
+    int flag = fcntl(m_fd,F_GETFL,0);
+    if(flag & O_NONBLOCK){
+        return;
+    }
+    fcntl(m_fd,F_SETFL,flag|O_NONBLOCK);
+}
+
+void talon::Fd_Event::cancle(talon::Fd_Event::TriggerEvent event_type) {
+    if (event_type == TriggerEvent::IN_EVENT) {
+        m_listen_event.events &= (~EPOLLIN);
+    } else {
+        m_listen_event.events &= (~EPOLLOUT);
+    }
+}
+
+
+

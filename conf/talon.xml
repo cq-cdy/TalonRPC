@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <root>
   <log>
-    <log_level>INFO</log_level>
+    <log_level>DEBUG</log_level>
 <!--    <log_file_name>test_rpc_server</log_file_name>-->
 <!--    <log_file_path>../log/</log_file_path>-->
 <!--    <log_max_file_size>1000000000</log_max_file_size>-->
@@ -23,6 +23,5 @@
 <!--      <timeout>1000</timeout>-->
 <!--    </rpc_server>-->
 <!--  </stubs>-->
-一个进程中，我创建了一个epoll_event来监听网络连接,然后我开启了四个线程，每个线程中，我都创建了一个epoll，并将这个epoll_event以指针的方式传递个四个线程中的epoll，为什么我用客户端连接的时候，只有一个线程的epoll响应了？
 
 </root>

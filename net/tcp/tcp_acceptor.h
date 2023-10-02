@@ -12,13 +12,13 @@ namespace talon {
     public:
         typedef std::shared_ptr<TcpAcceptor> s_ptr;
 
-        TcpAcceptor(NetAddr::s_ptr local_addr);
+        TcpAcceptor( NetAddr::s_ptr local_addr);
 
         ~TcpAcceptor();
 
-        std::pair<int, NetAddr::s_ptr> accept();
+        std::pair<int, NetAddr::s_ptr> accept() const;
 
-        int getListenFd();
+        int getListenFd() const;
 
     private:
         NetAddr::s_ptr m_local_addr; // 服务端监听的地址，addr -> ip:port

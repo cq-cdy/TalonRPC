@@ -8,9 +8,10 @@
 #include "cstring"
 
 namespace talon {
+
     bool IPNetAddr::CheckValid(const std::string &addr) {
-        size_t i = addr.find_first_of(":");
-        if (i == addr.npos) {
+        size_t i = addr.find_first_of(':');
+        if (i == std::string::npos) {
             return false;
         }
         std::string ip = addr.substr(0, i);
@@ -27,7 +28,7 @@ namespace talon {
         return true;
     }
 
-    IPNetAddr::IPNetAddr(const std::string &ip, uint16_t port) {
+    IPNetAddr::IPNetAddr(const std::string &ip, uint16_t port):m_ip(ip),m_port(port) {
         memset(&m_addr, 0, sizeof(m_addr));
 
         m_addr.sin_family = AF_INET;

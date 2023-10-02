@@ -31,6 +31,7 @@ static int g_epoll_max_events = 100;
 #define DELETE_TO_EPOLL()                                                   \
     auto it = m_listen_fds.find(event->getFd());                            \
     if (it == m_listen_fds.end()) {                                         \
+    DEBUGLOG("no need delete fd = %d from epoll,it's not exists",event->getFd())\
         return;                                                             \
     }                                                                       \
     int op = EPOLL_CTL_DEL;                                                 \
@@ -44,7 +45,7 @@ static int g_epoll_max_events = 100;
     DEBUGLOG("delete event success, fd[%d]", event->getFd());
 
 namespace talon {
-  // std::mutex Eventloop::m_mtx;
+    // std::mutex Eventloop::m_mtx;
     static thread_local Eventloop *t_current_eventloop = nullptr;
 
     Eventloop::Eventloop() {
@@ -63,7 +64,7 @@ namespace talon {
                     errno);
             exit(Error);
         }
-        DEBUGLOG("success create m_epoll_fd = %d",m_epoll_fd)
+        DEBUGLOG("success create m_epoll_fd = %d", m_epoll_fd)
         t_current_eventloop = this;
         initWakeUpFdEevent();
         initTimer();
@@ -75,13 +76,13 @@ namespace talon {
             delete m_p_wakeup_fd_event;
             m_p_wakeup_fd_event = nullptr;
         }
-        if(m_timer){
+        if (m_timer) {
             delete m_timer;
             m_timer = nullptr;
         }
     }
 
-    void Eventloop::initTimer(){
+    void Eventloop::initTimer() {
         m_timer = new Timer(); // set the timer_fd;
         if (m_timer == nullptr) {
             ERRORLOG("failed to create timer");
@@ -91,7 +92,7 @@ namespace talon {
 
     }
 
-    void Eventloop::addTimerEvent(const TimerEvent::s_ptr& event) {
+    void Eventloop::addTimerEvent(const TimerEvent::s_ptr &event) {
         if (m_timer == nullptr) {
             initTimer();
         }
@@ -124,7 +125,7 @@ namespace talon {
             DEBUGLOG("before epoll wait");
             int rt =
                     epoll_wait(m_epoll_fd, result_events, g_epoll_max_events, timeout);
-            DEBUGLOG("after epoll wait,rt = %d",rt);
+            DEBUGLOG("after epoll wait,rt = %d", rt);
 
             if (rt < 0) {
                 ERRORLOG("epoll wait error");
@@ -176,7 +177,7 @@ namespace talon {
     }
 
     void Eventloop::deleteEpollEvent(Fd_Event *event) {
-        if (isInLoopThread() ) {
+        if (isInLoopThread()) {
             DELETE_TO_EPOLL();
         } else {
             auto cb = [this, event]() { DELETE_TO_EPOLL(); };
@@ -188,7 +189,7 @@ namespace talon {
         return get_thread_id() == m_thread_id;
     }
 
-    void Eventloop::addTask(const std::function<void()>& task, bool is_wake_up) {
+    void Eventloop::addTask(const std::function<void()> &task, bool is_wake_up) {
         std::scoped_lock lock(m_mtx);
         m_pending_tasks.push(task);
         if (is_wake_up) {
@@ -218,6 +219,14 @@ namespace talon {
         });
 
         addEpollEvent(m_p_wakeup_fd_event);
+    }
+
+    Eventloop *Eventloop::GetCurrentEventLoop() {
+        if (t_current_eventloop) {
+            return t_current_eventloop;
+        }
+        t_current_eventloop = new Eventloop();
+        return t_current_eventloop;
     }
 
 }  // namespace talon

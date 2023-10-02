@@ -27,6 +27,7 @@ namespace talon{
         bool isInLoopThread() const;
         void addTask(const std::function<void()>&,bool a = false );
         void addTimerEvent(const TimerEvent::s_ptr&);
+        static Eventloop* GetCurrentEventLoop();
     private:
         void dealWakeup();
         void initWakeUpFdEevent();

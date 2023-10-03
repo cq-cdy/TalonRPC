@@ -15,34 +15,36 @@
 static int g_epoll_max_timeout = 10000;
 
 static int g_epoll_max_events = 100;
+#define ADD_TO_EPOLL() \
+    auto it = m_listen_fds.find(event->getFd()); \
+    int op = EPOLL_CTL_ADD; \
+    if (it != m_listen_fds.end()) { \
+      op = EPOLL_CTL_MOD; \
+    } \
+    epoll_event tmp = event->getEpollEvent(); \
+    INFOLOG("epoll_event.events = %d", (int)tmp.events); \
+    int rt = epoll_ctl(m_epoll_fd, op, event->getFd(), &tmp); \
+    if (rt == -1) { \
+      ERRORLOG("failed epoll_ctl when add fd, errno=%d, error=%s", errno, strerror(errno)); \
+    } \
+    m_listen_fds.insert(event->getFd()); \
+    DEBUGLOG("add event success, fd[%d]", event->getFd()) \
 
-#define ADD_TO_EPOLL()                                                       \
-    auto it = m_listen_fds.find(event->getFd());                             \
-    int op = EPOLL_CTL_ADD;                                                  \
-    if (it != m_listen_fds.end()) {                                          \
-        op = EPOLL_CTL_MOD;                                                  \
-    }                                                                        \
-    epoll_event tmp = event->getEpollEvent();                                \
-    if ((epoll_ctl(m_epoll_fd, op, event->getFd(), &tmp)) < 0) {             \
-        ERRORLOG("failed epoll_ctl when add fd,errno = %d ,err = %s", errno, \
-                 strerror(errno));                                           \
-    }
 
-#define DELETE_TO_EPOLL()                                                   \
-    auto it = m_listen_fds.find(event->getFd());                            \
-    if (it == m_listen_fds.end()) {                                         \
-    DEBUGLOG("no need delete fd = %d from epoll,it's not exists",event->getFd())\
-        return;                                                             \
-    }                                                                       \
-    int op = EPOLL_CTL_DEL;                                                 \
-    epoll_event tmp = event->getEpollEvent();                               \
-    int rt = epoll_ctl(m_epoll_fd, op, event->getFd(), NULL);               \
-    if (rt == -1) {                                                         \
-        ERRORLOG("failed epoll_ctl when add fd, errno=%d, error=%s", errno, \
-                 strerror(errno));                                          \
-    }                                                                       \
-    m_listen_fds.erase(event->getFd());                                     \
-    DEBUGLOG("delete event success, fd[%d]", event->getFd());
+#define DELETE_TO_EPOLL() \
+    auto it = m_listen_fds.find(event->getFd()); \
+    if (it == m_listen_fds.end()) { \
+      return; \
+    } \
+    int op = EPOLL_CTL_DEL; \
+    epoll_event tmp = event->getEpollEvent(); \
+    int rt = epoll_ctl(m_epoll_fd, op, event->getFd(), NULL); \
+    if (rt == -1) { \
+      ERRORLOG("failed epoll_ctl when add fd, errno=%d, error=%s", errno, strerror(errno)); \
+    } \
+    m_listen_fds.erase(event->getFd()); \
+    DEBUGLOG("delete event success, fd[%d]", event->getFd()); \
+
 
 namespace talon {
     // std::mutex Eventloop::m_mtx;

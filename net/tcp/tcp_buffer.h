@@ -18,14 +18,14 @@ namespace talon {
         ~TcpBuffer();
 
         // 返回可读字节数
-        int readAble() const;
+        int readAble() const ;
 
         // 返回可写的字节数
-        int writeAble() const;
+        int writeAble() const ;
 
-        int readIndex() const;
+        int readIndex() const ;
 
-        int writeIndex() const;
+        int writeIndex() const ;
 
         void writeToBuffer(const char* buf, int size);
 

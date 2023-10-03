@@ -28,7 +28,7 @@ namespace talon {
     public:
         typedef std::shared_ptr<TcpConnection> s_ptr;
 
-        TcpConnection(IOThread *io_thread, int fd, int buffer_size, const NetAddr::s_ptr& peer_addr);
+        TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr  peer_addr);
 
         TcpConnection(Eventloop *io_thread, int fd, int buffer_size, NetAddr::s_ptr  peer_addr);
 

@@ -12,7 +12,7 @@
 #include "cstring"
 #include "iostream"
 namespace talon {
-    TcpAcceptor::TcpAcceptor(NetAddr::s_ptr local_addr): m_local_addr(local_addr) {
+    TcpAcceptor::TcpAcceptor(const NetAddr::s_ptr& local_addr): m_local_addr(local_addr) {
         if (!local_addr->checkValid()) {
             ERRORLOG("invalid local addr %s", local_addr->toString().c_str());
             exit(0);

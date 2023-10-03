@@ -5,6 +5,7 @@
 #include "tcp_buffer.h"
 #include <cstring>
 #include "log.h"
+
 namespace talon {
 
     TcpBuffer::TcpBuffer(int size) : m_size(size) {
@@ -14,31 +15,37 @@ namespace talon {
     TcpBuffer::~TcpBuffer() {
 
     }
-    int TcpBuffer::readAble() const {
+
+// 返回可读字节数
+    int TcpBuffer::readAble() const{
         return m_write_index - m_read_index;
     }
 
-    int TcpBuffer::writeAble() const {
+// 返回可写的字节数
+    int TcpBuffer::writeAble()const {
         return m_buffer.size() - m_write_index;
     }
 
-    int TcpBuffer::readIndex() const {
+    int TcpBuffer::readIndex() const{
         return m_read_index;
     }
 
-    int TcpBuffer::writeIndex() const {
+    int TcpBuffer::writeIndex()const {
         return m_write_index;
     }
 
-    void TcpBuffer::writeToBuffer(const char *buf, int size) {
+    void TcpBuffer::writeToBuffer(const char* buf, int size) {
         if (size > writeAble()) {
             // 调整 buffer 的大小，扩容
             int new_size = (int)(1.5 * (m_write_index + size));
             resizeBuffer(new_size);
         }
+        memcpy(&m_buffer[m_write_index], buf, size);
+        m_write_index += size;
     }
 
-    void TcpBuffer::readFromBuffer(std::vector<char> &re, int size) {
+
+    void TcpBuffer::readFromBuffer(std::vector<char>& re, int size) {
         if (readAble() == 0) {
             return;
         }
@@ -54,6 +61,7 @@ namespace talon {
         adjustBuffer();
     }
 
+
     void TcpBuffer::resizeBuffer(int new_size) {
         std::vector<char> tmp(new_size);
         int count = std::min(new_size, readAble());
@@ -63,7 +71,9 @@ namespace talon {
 
         m_read_index = 0;
         m_write_index = m_read_index + count;
+
     }
+
 
     void TcpBuffer::adjustBuffer() {
         if (m_read_index < int(m_buffer.size() / 3)) {
@@ -89,6 +99,7 @@ namespace talon {
         m_read_index = j;
         adjustBuffer();
     }
+
     void TcpBuffer::moveWriteIndex(int size) {
         size_t j = m_write_index + size;
         if (j >= m_buffer.size()) {

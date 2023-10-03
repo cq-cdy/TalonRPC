@@ -12,7 +12,7 @@ namespace talon {
     public:
         typedef std::shared_ptr<TcpAcceptor> s_ptr;
 
-        TcpAcceptor( NetAddr::s_ptr local_addr);
+        TcpAcceptor( const NetAddr::s_ptr& local_addr);
 
         ~TcpAcceptor();
 

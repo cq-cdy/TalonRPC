@@ -34,7 +34,7 @@ namespace talon {
 
     public:
 
-        IPNetAddr(const std::string &ip, uint16_t port);
+        IPNetAddr(std::string ip, uint16_t port);
 
         IPNetAddr(const std::string &addr);
 

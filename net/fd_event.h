@@ -37,8 +37,8 @@ namespace talon {
     private:
 
         epoll_event m_listen_event{};
-        std::function<void()> m_read_call_back;
-        std::function<void()> m_write_call_back;
+        std::function<void()> m_read_callback;
+        std::function<void()> m_write_callback;
 
     };
 }

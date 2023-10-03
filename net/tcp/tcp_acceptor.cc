@@ -3,24 +3,21 @@
 //
 
 #include "tcp_acceptor.h"
-#include <cassert>
 #include "sys/socket.h"
-#include "fcntl.h"
 #include "log.h"
 #include "net_addr.h"
-#include "tcp_acceptor.h"
 #include "cstring"
 #include "iostream"
 namespace talon {
-    TcpAcceptor::TcpAcceptor(const NetAddr::s_ptr& local_addr): m_local_addr(local_addr) {
+    TcpAcceptor::TcpAcceptor(NetAddr::s_ptr &local_addr):m_local_addr(local_addr) {
         if (!local_addr->checkValid()) {
             ERRORLOG("invalid local addr %s", local_addr->toString().c_str());
             exit(0);
         }
+
         m_family = m_local_addr->getFamily();
 
-
-        m_listenfd = socket(m_family,SOCK_STREAM,0);
+        m_listenfd = socket(m_family, SOCK_STREAM, 0);
 
         if (m_listenfd < 0) {
             ERRORLOG("invalid listenfd %d", m_listenfd);
@@ -42,14 +39,22 @@ namespace talon {
             ERRORLOG("listen error, errno=%d, error=%s", errno, strerror(errno));
             exit(0);
         }
-
     }
+
 
     TcpAcceptor::~TcpAcceptor() {
-
     }
 
-    std::pair<int, NetAddr::s_ptr> TcpAcceptor::accept() const {
+
+
+
+    int TcpAcceptor::getListenFd() const{
+        return m_listenfd;
+    }
+
+
+    std::pair<int, NetAddr::s_ptr> TcpAcceptor::accept()const
+    {
         if (m_family == AF_INET) {
             sockaddr_in client_addr{};
             memset(&client_addr, 0, sizeof(client_addr));
@@ -64,13 +69,10 @@ namespace talon {
 
             return std::make_pair(client_fd, peer_addr);
         } else {
-            // todo orther m_family
+            // ...
             return std::make_pair(-1, nullptr);
         }
 
     }
 
-    int TcpAcceptor::getListenFd() const {
-        return m_listenfd;
-    }
 } // talon

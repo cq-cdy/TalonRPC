@@ -27,7 +27,7 @@ namespace talon {
 #define DEBUGLOG(str, ...) \
   if (talon::Logger::GetGlobalLogger()->getLogLevel() <= talon::Debug) \
   { \
-    talon::Logger::GetGlobalLogger()->pushLog((new talon::LogEvent(talon::LogLevel::Debug))->toString() \
+    talon::Logger::GetGlobalLogger()->pushLog(( talon::LogEvent(talon::LogLevel::Debug)).toString() \
       + "[" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]\t" + talon::formatString(str, ##__VA_ARGS__) + "\n");\
     talon::Logger::GetGlobalLogger()->log();                                                                                \
   } \
@@ -36,7 +36,7 @@ namespace talon {
 #define INFOLOG(str, ...) \
   if (talon::Logger::GetGlobalLogger()->getLogLevel() <= talon::Info) \
   { \
-  talon::Logger::GetGlobalLogger()->pushLog((new talon::LogEvent(talon::LogLevel::Info))->toString() \
+  talon::Logger::GetGlobalLogger()->pushLog(( talon::LogEvent(talon::LogLevel::Info)).toString() \
     + "[" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]\t" + talon::formatString(str, ##__VA_ARGS__) + "\n");\
   talon::Logger::GetGlobalLogger()->log();                                                                      \
   } \
@@ -44,7 +44,7 @@ namespace talon {
 #define ERRORLOG(str, ...) \
   if (talon::Logger::GetGlobalLogger()->getLogLevel() <= talon::Error) \
   { \
-    talon::Logger::GetGlobalLogger()->pushLog((new talon::LogEvent(talon::LogLevel::Error))->toString() \
+    talon::Logger::GetGlobalLogger()->pushLog((talon::LogEvent(talon::LogLevel::Error)).toString() \
       + "[" + std::string(__FILE__) + ":" + std::to_string(__LINE__) + "]\t" + talon::formatString(str, ##__VA_ARGS__) + "\n");\
     talon::Logger::GetGlobalLogger()->log();                                                                                 \
   } \

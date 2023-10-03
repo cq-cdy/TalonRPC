@@ -110,8 +110,8 @@ namespace talon {
             m_in_buffer->readFromBuffer(tmp, size);
 
             std::string msg;
-            for (size_t i = 0; i < tmp.size(); ++i) {
-                msg += tmp[i];
+            for (char i : tmp) {
+                msg += i;
             }
 
             INFOLOG("success get request[%s] from client[%s]", msg.c_str(), m_peer_addr->toString().c_str());
@@ -127,8 +127,8 @@ namespace talon {
             m_in_buffer->readFromBuffer(tmp, size);
 
             std::string msg;
-            for (size_t i = 0; i < tmp.size(); ++i) {
-                msg += tmp[i];
+            for (char i : tmp) {
+                msg += i;
             }
 
             INFOLOG("success get response[%s] from [%s]", msg.c_str(), m_peer_addr->toString().c_str());
@@ -140,19 +140,19 @@ namespace talon {
     }
 
     void TcpConnection::listenWrite() {
-        m_fd_event->listen(Fd_Event::OUT_EVENT, std::bind(&TcpConnection::onWrite, this));
+        m_fd_event->listen(Fd_Event::OUT_EVENT, [this] { onWrite(); });
         m_event_loop->addEpollEvent(m_fd_event);
     }
 
     void TcpConnection::listenRead() {
-        m_fd_event->listen(Fd_Event::IN_EVENT, std::bind(&TcpConnection::onRead, this));
+        m_fd_event->listen(Fd_Event::IN_EVENT, [this] { onRead(); });
         m_event_loop->addEpollEvent(m_fd_event);
     }
 
 
     void TcpConnection::onWrite() {
         // 将当前 out_buffer 里面的数据全部发送给 client
-
+        DEBUGLOG("ON onWrite");
         if (m_state != Connected) {
             ERRORLOG("onWrite error, client has already disconneced, addr[%s], clientfd[%d]", m_peer_addr->toString().c_str(), m_fd);
             return;
@@ -224,6 +224,8 @@ namespace talon {
         ::shutdown(m_fd, SHUT_RDWR);
 
     }
+
+
 
 
 } // talon

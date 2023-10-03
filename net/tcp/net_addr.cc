@@ -3,6 +3,8 @@
 //
 
 #include "net_addr.h"
+
+#include <utility>
 #include "log.h"
 #include "string"
 #include "cstring"
@@ -28,7 +30,7 @@ namespace talon {
         return true;
     }
 
-    IPNetAddr::IPNetAddr(const std::string &ip, uint16_t port):m_ip(ip),m_port(port) {
+    IPNetAddr::IPNetAddr(std::string ip, uint16_t port):m_ip(std::move(ip)),m_port(port) {
         memset(&m_addr, 0, sizeof(m_addr));
 
         m_addr.sin_family = AF_INET;

@@ -10,6 +10,11 @@
 #include "log.h"
 namespace talon {
 
+
+    /*
+        这里所谓的Server不是普遍意义上的服务器，而只是一个文件描述符事件监听epoll
+    
+    */
     TcpServer::TcpServer(NetAddr::s_ptr  local_addr):m_local_addr(std::move(local_addr)) {
         init();
         INFOLOG("rocket TcpServer listen sucess on [%s]", m_local_addr->toString().c_str());

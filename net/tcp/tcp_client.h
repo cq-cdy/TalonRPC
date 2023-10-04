@@ -16,10 +16,10 @@ namespace talon{
         ~TcpClient();
 
         //异步connect
-        void connect(std::function<void()> done);
+        void connect(const std::function<void()>& done);
 
-        void writeMessage(AbstractProtocol::s_ptr,std::function<void(AbstractProtocol::s_ptr)>);
-        void readMessage(AbstractProtocol::s_ptr,std::function<void(AbstractProtocol::s_ptr)>);
+        void writeMessage(const AbstractProtocol::s_ptr&,const std::function<void(AbstractProtocol::s_ptr)>&);
+        void readMessage(const std::string& req_id,const std::function<void(AbstractProtocol::s_ptr)>& done);
 
     private:
 

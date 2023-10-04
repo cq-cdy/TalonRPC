@@ -8,7 +8,6 @@
 #include "fd_event_group.h"
 #include "unistd.h"
 #include "sys/socket.h"
-#include <sys/types.h>
 #include "cstring"
 talon::TcpClient::TcpClient(const talon::NetAddr::s_ptr& peer_addr) {
 
@@ -27,7 +26,7 @@ talon::TcpClient::TcpClient(const talon::NetAddr::s_ptr& peer_addr) {
     m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(m_fd);
     m_fd_event->setNonBlock();
 
-    m_connection =std::make_shared<TcpConnection>(m_event_loop,m_fd,128,m_peer_addr);
+    m_connection =std::make_shared<TcpConnection>(m_event_loop,m_fd,128,m_peer_addr,TcpType::TcpClientType);
     m_connection->setType(TcpClientType);
 }
 
@@ -37,7 +36,7 @@ talon::TcpClient::~TcpClient() {
     }
 }
 
-void talon::TcpClient::connect(std::function<void()> done) {
+void talon::TcpClient::connect(const std::function<void()>& done) {
     int rt = ::connect(m_fd,m_peer_addr->getSockAddr(),m_peer_addr->getSockLen());
     /*
         因为在构造函数中把fd设置成了非阻塞的
@@ -64,16 +63,22 @@ void talon::TcpClient::connect(std::function<void()> done) {
                 int error  = 0;
                 socklen_t error_len = sizeof(error) ;
                 ::getsockopt(m_fd,SOL_SOCKET,SO_ERROR,&error,&error_len);
+
+                bool  is_connect_success = false;
                 if(error == 0){
+                    is_connect_success  = true;
+                    m_connection->setState(Connected);
                     DEBUGLOG("connect [%s] success",m_peer_addr->toString().c_str());
-                    if(done){
-                        done();
-                    }
+
                 }else{
                     ERRORLOG("connect error errno = %d,error = %s",error,strerror(error));
                 }
                 m_fd_event->cancle(Fd_Event::OUT_EVENT);
                 m_event_loop->addEpollEvent(m_fd_event);
+                if(is_connect_success && done){
+                    done();
+
+                }
             });
 
             m_event_loop->addEpollEvent(m_fd_event);
@@ -88,12 +93,16 @@ void talon::TcpClient::connect(std::function<void()> done) {
     }
 }
 
-void talon::TcpClient::writeMessage(talon::AbstractProtocol::s_ptr message,
-                                    std::function<void(AbstractProtocol::s_ptr)> done) {
+void talon::TcpClient::writeMessage(const talon::AbstractProtocol::s_ptr& message,
+                                    const std::function<void(AbstractProtocol::s_ptr)>& done) {
+    m_connection->pushSendMessage(message,done);
+    m_connection->listenWrite(); //客户端/服务端 监听写
+}
+
+void talon::TcpClient::readMessage(const std::string &req_id,
+                                   const std::function<void(AbstractProtocol::s_ptr)>& done) {
+    m_connection->pushReadMessage(req_id,done);
+    m_connection->listenRead(); // 客户端/服务端 监听读
 
 }
 
-void talon::TcpClient::readMessage(talon::AbstractProtocol::s_ptr message,
-                                   std::function<void(AbstractProtocol::s_ptr)> done) {
-
-}

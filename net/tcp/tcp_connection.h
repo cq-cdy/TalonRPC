@@ -6,9 +6,12 @@
 #define TALON_RPC_TCP_CONNECTION_H
 
 #include "memory"
+#include "queue"
 #include "net_addr.h"
 #include "iothread.h"
 #include "tcp_buffer.h"
+#include "coder/abstract_protocol.h"
+#include "coder/abstract_coder.h"
 
 namespace talon {
 
@@ -28,19 +31,26 @@ namespace talon {
     public:
         typedef std::shared_ptr<TcpConnection> s_ptr;
 
-        TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr  peer_addr);
+        TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr,
+                      TcpType type = TcpType::TcpServerType);
 
-        TcpConnection(Eventloop *io_thread, int fd, int buffer_size, NetAddr::s_ptr  peer_addr);
+        TcpConnection(Eventloop *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr,
+                      TcpType type = TcpType::TcpServerType);
 
         ~TcpConnection();
 
         void onRead();
+
         void excute();
+
         void onWrite();
+
         void clear();
+
         void setState(TcpState state);
 
         TcpState getState() const;
+
         // 服务器主动关闭连接
         void shutdown();
 
@@ -48,24 +58,36 @@ namespace talon {
 
         void listenRead();
 
-        void setType(TcpType type) { m_type = type;}
+        void setType(TcpType type) { m_type = type; }
+
+        TcpType m_type{TcpServerType};
+        std::string *m_res{nullptr};
+
+        std::function<void(std::string &)> m_write_done{nullptr};
+        std::function<void(std::string &)> m_read_done{nullptr};
+
+        void pushSendMessage(const AbstractProtocol::s_ptr &message,
+                             const std::function<void(AbstractProtocol::s_ptr)> &done);
+        void pushReadMessage(const std::string& req_id,
+                             const std::function<void(AbstractProtocol::s_ptr)>& done);
+
     private:
 
-        IOThread* m_io_thread {nullptr};
-        Eventloop* m_event_loop {nullptr};
+        IOThread *m_io_thread{nullptr};
+        Eventloop *m_event_loop{nullptr};
         NetAddr::s_ptr m_local_addr;
         NetAddr::s_ptr m_peer_addr;
-    public:
         TcpBuffer::s_ptr m_in_buffer;
         TcpBuffer::s_ptr m_out_buffer;
+        int m_fd{0};
         TcpState m_state;
-        int m_fd {0};
-        Fd_Event* m_fd_event {nullptr};
-        TcpType m_type {TcpServerType};
-        std::string* m_res {nullptr};
 
-        std::function<void(std::string&)> m_write_done{nullptr};
-        std::function<void(std::string&)> m_read_done{nullptr};
+        Fd_Event *m_fd_event{nullptr};
+        AbstractCoder *m_coder{nullptr};
+
+        std::vector<std::pair<AbstractProtocol::s_ptr, std::function<void(AbstractProtocol::s_ptr)>>> m_write_dones;
+        std::map<std::string,std::function<void(AbstractProtocol::s_ptr)>> m_read_dones;
+
     };
 
 } // talon

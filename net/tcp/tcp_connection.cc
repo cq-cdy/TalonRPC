@@ -8,12 +8,13 @@
 #include "unistd.h"
 #include "fd_event_group.h"
 #include "log.h"
+#include "coder/string_coder.h"
 
 namespace talon {
 
-    TcpConnection::TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr)
+    TcpConnection::TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr,TcpType type )
 
-    : m_io_thread(io_thread), m_peer_addr(std::move(peer_addr)), m_state(NotConnected), m_fd(fd) {
+            : m_io_thread(io_thread), m_peer_addr(std::move(peer_addr)), m_state(NotConnected), m_fd(fd),m_type(type) {
         /**
          * 为什么红黑树上挂了那么多connection事件，这么就能找到对应对象的的m_in_buffer呢？
          *
@@ -30,18 +31,25 @@ namespace talon {
         m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(fd);
         m_fd_event->setNonBlock();
         m_event_loop = m_io_thread->getEventLoop();
-        listenRead();
+        if(m_type == TcpType::TcpServerType){
+            listenRead();
+        }
+        m_coder = new StringCoder();
 
     }
 
-    TcpConnection::TcpConnection(Eventloop* loop, int fd, int buffer_size, NetAddr::s_ptr peer_addr)
-            : m_event_loop(loop), m_peer_addr(std::move(peer_addr)), m_state(NotConnected), m_fd(fd) {
+    TcpConnection::TcpConnection(Eventloop *loop, int fd, int buffer_size, NetAddr::s_ptr peer_addr,TcpType type)
+            : m_event_loop(loop), m_peer_addr(std::move(peer_addr)), m_state(NotConnected), m_fd(fd),m_type(type) {
 
         m_in_buffer = std::make_shared<TcpBuffer>(buffer_size);
         m_out_buffer = std::make_shared<TcpBuffer>(buffer_size);
 
         m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(fd);
         m_fd_event->setNonBlock();
+        if(m_type == TcpType::TcpServerType){
+            listenRead();
+        }
+        m_coder = new StringCoder();
 
     }
 
@@ -53,13 +61,14 @@ namespace talon {
         // 1. 从 socket 缓冲区，调用 系统的 read 函数读取字节 in_buffer 里面
 
         if (m_state != Connected) {
-            ERRORLOG("onRead error, client has already disconneced, addr[%s], clientfd[%d]", m_peer_addr->toString().c_str(), m_fd);
+            ERRORLOG("onRead error, client has already disconneced, addr[%s], clientfd[%d]",
+                     m_peer_addr->toString().c_str(), m_fd);
             return;
         }
 
         bool is_read_all = false;
         bool is_close = false;
-        while(!is_read_all) {
+        while (!is_read_all) {
             if (m_in_buffer->writeAble() == 0) {
                 m_in_buffer->resizeBuffer(2 * m_in_buffer->m_buffer.size());
             }
@@ -95,7 +104,6 @@ namespace talon {
         if (!is_read_all) {
             ERRORLOG("not read all data");
         }
-
         // TODO: 简单的 echo, 后面补充 RPC 协议解析
         excute();
 
@@ -110,7 +118,7 @@ namespace talon {
             m_in_buffer->readFromBuffer(tmp, size);
 
             std::string msg;
-            for (char i : tmp) {
+            for (char i: tmp) {
                 msg += i;
             }
 
@@ -120,21 +128,23 @@ namespace talon {
 
             listenWrite();
 
-        } else {
-            std::vector<char> tmp;
-            int size = m_in_buffer->readAble();
-            tmp.resize(size);
-            m_in_buffer->readFromBuffer(tmp, size);
+        } else { // 客户端
+            std::vector<AbstractProtocol::s_ptr> result;
+            m_coder ->decode(result,m_in_buffer);
+            for(int i = 0 ;i < result.size();++i){
+                std::string req_id = result[i]->getReqId();
+                auto it = m_read_dones.find(req_id);
 
-            std::string msg;
-            for (char i : tmp) {
-                msg += i;
-            }
+                if(it !=m_read_dones.end()){
+                    auto func = it->second;
+                    /*
+                     * 异步编程中，某个对象可能会在回调函数中被使用。为了确保回调发生时对象仍然存在，
+                     * 你可以使用 std::enable_shared_from_this 从当前对象获取一个 shared_ptr，
+                     * 并确保其生命周期被正确管理。
+                     */
+                    func(result[i]->shared_from_this());
+                }
 
-            INFOLOG("success get response[%s] from [%s]", msg.c_str(), m_peer_addr->toString().c_str());
-
-            if (m_read_done) {
-                m_read_done(msg);
             }
         }
     }
@@ -153,11 +163,24 @@ namespace talon {
     void TcpConnection::onWrite() {
         // 将当前 out_buffer 里面的数据全部发送给 client
         DEBUGLOG("ON onWrite");
+
         if (m_state != Connected) {
             ERRORLOG("onWrite error, client has already disconneced, addr[%s], clientfd[%d]", m_peer_addr->toString().c_str(), m_fd);
             return;
         }
 
+        if (m_type == TcpClientType) {
+            //  1. 将 message encode 得到字节流
+            // 2. 将字节流入到 buffer 里面，然后全部发送
+            DEBUGLOG("client --------------------------------------------------")
+            std::vector<AbstractProtocol::s_ptr> messages;
+
+            for (size_t i = 0; i< m_write_dones.size(); ++i) {
+                messages.push_back(m_write_dones[i].first);
+            }
+
+            m_coder->encode(messages, m_out_buffer);
+        }
         bool is_write_all = false;
         while(true) {
             if (m_out_buffer->readAble() == 0) {
@@ -184,18 +207,21 @@ namespace talon {
         if (is_write_all) {
             m_fd_event->cancle(Fd_Event::OUT_EVENT);
             m_event_loop->addEpollEvent(m_fd_event);
-            std::string tmp;
-            if (m_write_done) {
-                m_write_done(tmp);
+        }
+
+        if (m_type == TcpClientType) {
+            for (auto & m_w_done : m_write_dones) {
+                m_w_done.second(m_w_done.first);
             }
+            m_write_dones.clear();
         }
     }
 
     void TcpConnection::setState(const TcpState state) {
-        m_state = Connected;
+        m_state = state;
     }
 
-    TcpState TcpConnection::getState() const{
+    TcpState TcpConnection::getState() const {
         return m_state;
     }
 
@@ -222,6 +248,18 @@ namespace talon {
         // 发送 FIN 报文， 触发了四次挥手的第一个阶段
         // 当 fd 发生可读事件，但是可读的数据为0，即 对端发送了 FIN
         ::shutdown(m_fd, SHUT_RDWR);
+
+    }
+
+    void
+    TcpConnection::pushSendMessage(const AbstractProtocol::s_ptr& message,
+                                   const std::function<void(AbstractProtocol::s_ptr)>& done) {
+        m_write_dones.emplace_back(message, done);
+    }
+
+    void
+    TcpConnection::pushReadMessage(const std::string& req_id, const std::function<void(AbstractProtocol::s_ptr)>&done) {
+        m_read_dones.insert(std::make_pair(req_id,done));
 
     }
 

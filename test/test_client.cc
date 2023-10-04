@@ -11,7 +11,9 @@
 #include "log.h"
 #include "config.h"
 #include "tcp/tcp_client.h"
-
+#include "coder/string_coder.h"
+#include "coder/abstract_coder.h"
+#include "coder/abstract_protocol.h"
 void test_connect() {
 
     // 调用 conenct 连接 server
@@ -54,8 +56,18 @@ void test_tcp_connect(){
     talon::IPNetAddr::s_ptr addr = std::make_shared<talon::IPNetAddr>("127.0.0.1", 12345);
 
     talon::TcpClient client(addr);
-    client.connect([addr](){
+    client.connect([&client,addr](){
         DEBUGLOG("test connect to [%s] success",addr->toString().c_str());
+        std::shared_ptr message = std::make_shared<talon::StringProtocol>();
+        message->info = "hello talon";
+        message ->setReqId("12345");
+        client.writeMessage(message,[](const talon::AbstractProtocol::s_ptr& msg_ptr){
+            DEBUGLOG("send message success");
+        }); // 开启客户端的写监听->写完关闭监听
+        client.readMessage("12345",[](const talon::AbstractProtocol::s_ptr& msg_ptr){
+            std::shared_ptr message = std::dynamic_pointer_cast<talon::StringProtocol>( msg_ptr);
+            DEBUGLOG("req_id[%d] get response %s",message->getReqId().c_str(),message->info.c_str());
+        });// 开启客户端的读监听，客户端不用关闭读的监听（用来接收服务端发来的消息）
     });
 }
 int main() {

@@ -19,7 +19,10 @@ add_executable(test_client  test_client.cc
         ../net/tcp/tcp_buffer.cc
         ../net/tcp/tcp_buffer.h
         ../net/coder/abstract_coder.h
-        ../net/coder/string_coder.h)
+        ../net/coder/string_coder.h
+        ../net/coder/tinypb_coder.cc
+        ../net/coder/tinypb_coder.h
+        ../net/coder/tinypb_protocol.h)
 add_executable(test_tcp test_tcp.cc
         ../net/tcp/tcp_server.cc
         ../net/tcp/tcp_server.h

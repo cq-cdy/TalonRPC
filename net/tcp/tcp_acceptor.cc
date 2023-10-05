@@ -8,6 +8,7 @@
 #include "net_addr.h"
 #include "cstring"
 #include "iostream"
+#include "unistd.h"
 namespace talon {
     TcpAcceptor::TcpAcceptor(NetAddr::s_ptr &local_addr):m_local_addr(local_addr) {
         if (!local_addr->checkValid()) {

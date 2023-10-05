@@ -59,6 +59,8 @@ void talon::TcpClient::connect(const std::function<void()>& done) {
                 socket的连接是否完成，于是用本地的event_loop
                 来监听这个fd的可写事件，如果可写就说明连接成功。
             */
+
+           // 注册连接成功的回调函数
             m_fd_event->listen(Fd_Event::OUT_EVENT,[this,done](){
                 int error  = 0;
                 socklen_t error_len = sizeof(error) ;
@@ -77,7 +79,6 @@ void talon::TcpClient::connect(const std::function<void()>& done) {
                 m_event_loop->addEpollEvent(m_fd_event);
                 if(is_connect_success && done){
                     done();
-
                 }
             });
 
@@ -93,6 +94,18 @@ void talon::TcpClient::connect(const std::function<void()>& done) {
     }
 }
 
+
+/*
+    用户调用此方法
+
+    把用户需要传入的message 和 done函数 通过m_connection->pushSendMessage(message,done);
+    传入到m_connection中， 加入到m_write_dones中，然后设置写监听，当对端可写时
+    就会调用m_connection->onWrite(),在onWrite中会判断如果当前类型是TcpClientType，那么就会
+    调用m_coder->encode(messages, m_out_buffer);把message编码成字节流，然后把字节流写入到m_out_buffer中
+    然后再调用m_connection->onWrite()，把m_out_buffer中的数据写入到传输给服务器，服务器那边就会调用
+    m_connection->onRead()，然后在onRead()中调用m_coder->decode(m_in_buffer, messages);把字节流解码成message
+    然后再调用用户传入的done函数，把message传给用户。
+*/
 void talon::TcpClient::writeMessage(const talon::AbstractProtocol::s_ptr& message,
                                     const std::function<void(AbstractProtocol::s_ptr)>& done) {
     m_connection->pushSendMessage(message,done);

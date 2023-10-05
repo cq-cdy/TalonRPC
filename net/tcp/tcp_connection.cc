@@ -10,14 +10,41 @@
 #include "log.h"
 #include "coder/string_coder.h"
 
-namespace talon {
+/*
+    想两端读写数据怎么办？
+    往buffer写数据就行了，然后设置监听，和回调函数，
+    当实践触发的时候自动执行回调函数，然后在回调函数中
+    操作buffer，这样就实现了读写数据。
 
+*/
+namespace talon {
+    /*
+           epoll不是普遍意义上的服务器，而只是一个文件描述符事件监听epoll
+           就行服务端，运行的时候，就会在一个进程上监听所连接的fd的读写事件，比如
+           有一个客户端来连接了，那么就会在这个进程上监听这个客户端的读写事件，然后
+           就做出响应，写回客户端。
+           但客户端进程运行的时候TcpServer 类其实就是开一个epoll，来监听文件描述符的读写事件
+           比如客户端进程和 服务端通信的文件描述符的事件，比如给服务器发个一消息，或者接收
+           服务器的消息，这个时候就会在这个进程上监听这个文件描述符的读写事件，虽然都是在
+           TcpServer和TcpClient代码中开启epoll时会标识双方各自持有的connection描述符是客户端还是服务端
+           ，只是在服务端和客户端运行的时候就会走不同是逻辑
+           通过 enum TcpType {
+           TcpServerType = 1,
+           TcpClientType = 2,
+           };来确定当前运行的loop中的tcp_connection是在服务端还是客户端
+
+
+            还需要注意的是一个服务端 开启的多线程中的每个线程都会有一个epoll，但文件描述符
+            是共享的。
+       */
+
+      // 因为需要向某个已经在某个线程的epoll中确定的建立连接监听的文件描述符上进行读写，
+      //所哟*io_thread就是这个文件描述符所在的epoll所在的线程
     TcpConnection::TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr,TcpType type )
 
             : m_io_thread(io_thread), m_peer_addr(std::move(peer_addr)), m_state(NotConnected), m_fd(fd),m_type(type) {
         /**
          * 为什么红黑树上挂了那么多connection事件，这么就能找到对应对象的的m_in_buffer呢？
-         *
          * 1.首先epoll红黑树上的是epoll_event 对象
          * 2.我们在Fd_Event::listen中epoll_event->data->ptr = this我们封装了fd_event对象
          * 3.然后通过fd_event可以找到我们绑定的每个对象的回调函数
@@ -30,7 +57,7 @@ namespace talon {
 
         m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(fd);
         m_fd_event->setNonBlock();
-        m_event_loop = m_io_thread->getEventLoop();
+        m_event_loop = m_io_thread->getEventLoop();//把事件往这个线程的epoll上挂
         if(m_type == TcpType::TcpServerType){
             listenRead();
         }
@@ -46,18 +73,42 @@ namespace talon {
 
         m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(fd);
         m_fd_event->setNonBlock();
+
+        /*如果是在服务端新建的一个连接，那肯定是要
+        监听客户端发来的消息，所以开启写读事件的监听*/
         if(m_type == TcpType::TcpServerType){
-            listenRead();
+            listenRead();//这里的listenRead()就是在epoll红黑树上挂了一个读事件
         }
         m_coder = new StringCoder();
-
     }
 
     TcpConnection::~TcpConnection() {
         DEBUGLOG("~TcpConnection");
     }
 
-    void TcpConnection::onRead() {
+
+    /*
+    @details
+    关于Server端，Client端 onRead()，excute()，onWrite()中的区别
+    onRead():
+            主要做的事情，就算从网络端读取字节流到buffer中
+    excute():
+            就是对buffer中的字节序列按业务操作
+                作为Server端时，就是对buffer中的字节序列按照RPC协议解析，
+            然后执行业务逻辑，然后把结果写到out_buffer中，然后注册写事件
+            等可写时再把out_buffer中的结果写回去，然后关闭写事件监听。
+                作为Client端时，首先肯定是客户端往m_write_dones中写入，然后序列化到
+            out_buffer中写入后，然后开启写事件监听，等可写时再把out_buffer中的结果写回去，
+            然后关闭写事件监听。
+    onWrite()：
+            主要做的事情，就是把out_buffer中的字节流写到网络端
+            作为Client端时，就是把用户传入到m_write_dones中的数据序列化到out_buffer中的字节流。
+            作为Server端时，就是把out_buffer中的字节流写到客户端
+
+    因此顺序是:客户端->writeMessage->m_write_dones-> onWrite()-> excute()
+                    ->服务器->onRead()-> excute()->onWrite()->客户端onRead()->m_read_dones
+    */
+    void TcpConnection::onRead() { // 读回调
         // 1. 从 socket 缓冲区，调用 系统的 read 函数读取字节 in_buffer 里面
 
         if (m_state != Connected) {
@@ -111,7 +162,7 @@ namespace talon {
 
     void TcpConnection::excute() {
         if (m_type == TcpServerType) {
-// 将 RPC 请求执行业务逻辑，获取 RPC 响应, 再把 RPC 响应发送回去
+            // 将 RPC 请求执行业务逻辑，获取 RPC 响应, 再把 RPC 响应发送回去
             std::vector<char> tmp;
             int size = m_in_buffer->readAble();
             tmp.resize(size);
@@ -178,8 +229,7 @@ namespace talon {
             for (size_t i = 0; i< m_write_dones.size(); ++i) {
                 messages.push_back(m_write_dones[i].first);
             }
-
-            m_coder->encode(messages, m_out_buffer);
+            m_coder->encode(messages, m_out_buffer); // 回写到m_out_buffer中
         }
         bool is_write_all = false;
         while(true) {
@@ -204,7 +254,7 @@ namespace talon {
                 break;
             }
         }
-        if (is_write_all) {
+        if (is_write_all) { // 写完之后，服务端就不再关心本次的写事件
             m_fd_event->cancle(Fd_Event::OUT_EVENT);
             m_event_loop->addEpollEvent(m_fd_event);
         }

@@ -64,6 +64,12 @@ void test_tcp_connect(){
         client.writeMessage(message,[](const talon::AbstractProtocol::s_ptr& msg_ptr){
             DEBUGLOG("send message success");
         }); // 开启客户端的写监听->写完关闭监听
+        client.writeMessage(message,[](const talon::AbstractProtocol::s_ptr& msg_ptr){
+            DEBUGLOG("send message success");
+        }); // 开启客户端的写监听->写完关闭监听
+        client.writeMessage(message,[](const talon::AbstractProtocol::s_ptr& msg_ptr){
+            DEBUGLOG("send message success");
+        }); // 开启客户端的写监听->写完关闭监听
         client.readMessage("12345",[](const talon::AbstractProtocol::s_ptr& msg_ptr){
             std::shared_ptr message = std::dynamic_pointer_cast<talon::StringProtocol>( msg_ptr);
             DEBUGLOG("req_id[%d] get response %s",message->getReqId().c_str(),message->info.c_str());

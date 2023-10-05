@@ -9,7 +9,7 @@ talon::IOThreadGroup::IOThreadGroup(int size) : m_size(size) {
     m_io_thread_groups.resize(m_size);
     for (size_t i = 0; i < m_size; i++) {
         m_io_thread_groups[i] = new IOThread();
-    } //  not start ,these wait in sem_t
+    } //  start ,but wait in sem_t
 }
 
 talon::IOThreadGroup::~IOThreadGroup() {
@@ -23,7 +23,12 @@ void talon::IOThreadGroup::start() {
 }
 
 void talon::IOThreadGroup::join() {
+    int c = 0;
     for (auto &m_io_thread_group: m_io_thread_groups) {
+        DEBUGLOG("IOThread join---------------------------------------");
+
+        DEBUGLOG("IOThread %d join success", c++);
+
         m_io_thread_group->join();
     }
 }

@@ -9,6 +9,7 @@
 #include "fd_event_group.h"
 #include "log.h"
 #include "coder/string_coder.h"
+#include "coder/tinypb_coder.h"
 
 /*
     想两端读写数据怎么办？
@@ -61,7 +62,7 @@ namespace talon {
         if(m_type == TcpType::TcpServerType){
             listenRead();
         }
-        m_coder = new StringCoder();
+        m_coder =new TinyPBCoder();
 
     }
 
@@ -79,7 +80,8 @@ namespace talon {
         if(m_type == TcpType::TcpServerType){
             listenRead();//这里的listenRead()就是在epoll红黑树上挂了一个读事件
         }
-        m_coder = new StringCoder();
+       // m_coder = new StringCoder();
+        m_coder = new TinyPBCoder();
     }
 
     TcpConnection::~TcpConnection() {
@@ -162,21 +164,32 @@ namespace talon {
 
     void TcpConnection::excute() {
         if (m_type == TcpServerType) {
-            // 将 RPC 请求执行业务逻辑，获取 RPC 响应, 再把 RPC 响应发送回去
-            std::vector<char> tmp;
-            int size = m_in_buffer->readAble();
-            tmp.resize(size);
-            m_in_buffer->readFromBuffer(tmp, size);
-
-            std::string msg;
-            for (char i: tmp) {
-                msg += i;
+//            // 将 RPC 请求执行业务逻辑，获取 RPC 响应, 再把 RPC 响应发送回去
+//            std::vector<char> tmp;
+//            int size = m_in_buffer->readAble();
+//            tmp.resize(size);
+//            m_in_buffer->readFromBuffer(tmp, size);
+//
+//            std::string msg;
+//            for (char i: tmp) {
+//                msg += i;
+//            }
+//
+//            INFOLOG("success get request[%s] from client[%s]", msg.c_str(), m_peer_addr->toString().c_str());
+//
+//            m_out_buffer->writeToBuffer(msg.c_str(), msg.length());
+            std::vector<AbstractProtocol::s_ptr> result;
+            std::vector<AbstractProtocol::s_ptr> replay_messages;
+            m_coder->decode(result,m_in_buffer);
+            for(const auto& i: result){
+                INFOLOG(" success get request[%s] from client[%s ]", i->m_msg_id.c_str(), m_peer_addr->toString().c_str());
+                std::shared_ptr<TinyPBProtocol> message  = std::make_shared<TinyPBProtocol>();
+                message->m_pb_data="hello. this is talon rpc test data";
+                message->m_msg_id= i->m_msg_id;
+                replay_messages.emplace_back(message);
             }
 
-            INFOLOG("success get request[%s] from client[%s]", msg.c_str(), m_peer_addr->toString().c_str());
-
-            m_out_buffer->writeToBuffer(msg.c_str(), msg.length());
-
+            m_coder->encode(replay_messages,m_out_buffer);
             listenWrite();
 
         } else { // 客户端
@@ -226,8 +239,8 @@ namespace talon {
             DEBUGLOG("client --------------------------------------------------")
             std::vector<AbstractProtocol::s_ptr> messages;
 
-            for (size_t i = 0; i< m_write_dones.size(); ++i) {
-                messages.push_back(m_write_dones[i].first);
+            for (auto & m_write_done_ : m_write_dones) {
+                messages.push_back(m_write_done_.first);
             }
             m_coder->encode(messages, m_out_buffer); // 回写到m_out_buffer中
         }

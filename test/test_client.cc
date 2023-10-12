@@ -12,8 +12,9 @@
 #include "config.h"
 #include "tcp/tcp_client.h"
 #include "coder/string_coder.h"
-#include "coder/abstract_coder.h"
 #include "coder/abstract_protocol.h"
+#include "coder/tinypb_protocol.h"
+#include "coder/tinypb_coder.h"
 void test_connect() {
 
     // 调用 conenct 连接 server
@@ -58,21 +59,15 @@ void test_tcp_connect(){
     talon::TcpClient client(addr);
     client.connect([&client,addr](){
         DEBUGLOG("test connect to [%s] success",addr->toString().c_str());
-        std::shared_ptr message = std::make_shared<talon::StringProtocol>();
-        message->info = "hello talon";
-        message ->setReqId("12345");
-        client.writeMessage(message,[](const talon::AbstractProtocol::s_ptr& msg_ptr){
+        std::shared_ptr message = std::make_shared<talon::TinyPBProtocol>();
+        message->m_msg_id="123456789";
+        message->m_pb_data = "test pb data";
+        client.writeMessage(message,[](const talon::TinyPBProtocol::s_ptr& msg_ptr){
             DEBUGLOG("send message success");
         }); // 开启客户端的写监听->写完关闭监听
-        client.writeMessage(message,[](const talon::AbstractProtocol::s_ptr& msg_ptr){
-            DEBUGLOG("send message success");
-        }); // 开启客户端的写监听->写完关闭监听
-        client.writeMessage(message,[](const talon::AbstractProtocol::s_ptr& msg_ptr){
-            DEBUGLOG("send message success");
-        }); // 开启客户端的写监听->写完关闭监听
-        client.readMessage("12345",[](const talon::AbstractProtocol::s_ptr& msg_ptr){
-            std::shared_ptr message = std::dynamic_pointer_cast<talon::StringProtocol>( msg_ptr);
-            DEBUGLOG("req_id[%d] get response %s",message->getReqId().c_str(),message->info.c_str());
+        client.readMessage("123456789",[](const talon::TinyPBProtocol::s_ptr& msg_ptr){
+            std::shared_ptr message = std::dynamic_pointer_cast<talon::TinyPBProtocol>(msg_ptr);
+            DEBUGLOG("req_id[%d] get response %s",message->getReqId().c_str(),message->m_pb_data.c_str());
         });// 开启客户端的读监听，客户端不用关闭读的监听（用来接收服务端发来的消息）
     });
 }

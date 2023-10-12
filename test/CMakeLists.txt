@@ -22,12 +22,19 @@ add_executable(test_client  test_client.cc
         ../net/coder/string_coder.h
         ../net/coder/tinypb_coder.cc
         ../net/coder/tinypb_coder.h
-        ../net/coder/tinypb_protocol.h)
+        ../net/coder/tinypb_protocol.h
+        ../net/coder/tinypb_protocol.cc)
+
 add_executable(test_tcp test_tcp.cc
         ../net/tcp/tcp_server.cc
         ../net/tcp/tcp_server.h
         ../net/tcp/tcp_connection.cc
-        ../net/tcp/tcp_connection.h)
+        ../net/tcp/tcp_connection.h
+        ../net/coder/abstract_coder.h
+        ../net/coder/tinypb_coder.h
+        ../net/coder/tinypb_coder.cc
+        ../net/coder/tinypb_protocol.cc
+)
 
 
 aux_source_directory(../common COMMON_LIST)

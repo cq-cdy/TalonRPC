@@ -13,6 +13,8 @@
 #include "coder/abstract_protocol.h"
 #include "coder/abstract_coder.h"
 
+#include "rpc/rpc_dispatcher.h"
+
 namespace talon {
 
     enum TcpState {
@@ -25,16 +27,16 @@ namespace talon {
         TcpServerType = 1,
         TcpClientType = 2,
     };
-
+    class RpcDispatcher;
     class TcpConnection {
 
     public:
         typedef std::shared_ptr<TcpConnection> s_ptr;
 
-        TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr,
+        TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr, NetAddr::s_ptr local_addr,
                       TcpType type = TcpType::TcpServerType);
 
-        TcpConnection(Eventloop *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr,
+        TcpConnection(Eventloop *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr, NetAddr::s_ptr local_addr,
                       TcpType type = TcpType::TcpServerType);
 
         ~TcpConnection();
@@ -71,6 +73,11 @@ namespace talon {
         void pushReadMessage(const std::string& req_id,
                              const std::function<void(AbstractProtocol::s_ptr)>& done);
 
+        NetAddr::s_ptr getLocalAddr();
+
+        NetAddr::s_ptr getPeerAddr();
+
+        void reply(std::vector<AbstractProtocol::s_ptr>& replay_messages);
     private:
 
         IOThread *m_io_thread{nullptr};
@@ -87,7 +94,7 @@ namespace talon {
 
         std::vector<std::pair<AbstractProtocol::s_ptr, std::function<void(AbstractProtocol::s_ptr)>>> m_write_dones;
         std::map<std::string,std::function<void(AbstractProtocol::s_ptr)>> m_read_dones;
-
+        std::shared_ptr<RpcDispatcher> m_dispatcher;
     };
 
 } // talon

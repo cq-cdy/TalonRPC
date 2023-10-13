@@ -81,7 +81,8 @@ namespace talon {
          封装成一个的一个fd_event，绑定的函数地址，仍然是主线程的函数地址，也就是说，当fd触发
          都读事件时，就会在epoll线程中执行主线程的onRead函数，这样就实现了线程间的通信。
         */
-        TcpConnection::s_ptr connetion = std::make_shared<TcpConnection>(io_thread, client_fd, 128, peer_addr,TcpType::TcpServerType);
+        TcpConnection::s_ptr connetion = std::make_shared<TcpConnection>(io_thread, client_fd, 128, peer_addr,
+                                                                         nullptr,TcpType::TcpServerType);
         connetion->setState(Connected);
 
         m_client.insert(connetion); // 防止 connetion析构

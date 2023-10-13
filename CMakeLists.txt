@@ -18,6 +18,6 @@ include_directories(${PROJECT_SOURCE_DIR}/net)
 link_directories(${PROJECT_SOURCE_DIR}/lib)
 
 add_subdirectory(test)
-#add_subdirectory(common)
+add_subdirectory(common)
 
 

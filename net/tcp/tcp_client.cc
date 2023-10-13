@@ -26,7 +26,7 @@ talon::TcpClient::TcpClient(const talon::NetAddr::s_ptr& peer_addr) {
     m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(m_fd);
     m_fd_event->setNonBlock();
 
-    m_connection =std::make_shared<TcpConnection>(m_event_loop,m_fd,128,m_peer_addr,TcpType::TcpClientType);
+    m_connection =std::make_shared<TcpConnection>(m_event_loop,m_fd,128,m_peer_addr, nullptr,TcpType::TcpClientType);
     m_connection->setType(TcpClientType);
 }
 

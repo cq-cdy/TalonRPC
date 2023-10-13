@@ -10,6 +10,7 @@
 #include "log.h"
 #include "coder/string_coder.h"
 #include "coder/tinypb_coder.h"
+#include "rpc/rpc_dispatcher.h"
 
 /*
     想两端读写数据怎么办？
@@ -39,11 +40,11 @@ namespace talon {
             是共享的。
        */
 
-      // 因为需要向某个已经在某个线程的epoll中确定的建立连接监听的文件描述符上进行读写，
-      //所哟*io_thread就是这个文件描述符所在的epoll所在的线程
-    TcpConnection::TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr,TcpType type )
+    // 因为需要向某个已经在某个线程的epoll中确定的建立连接监听的文件描述符上进行读写，
+    //所哟*io_thread就是这个文件描述符所在的epoll所在的线程
+    TcpConnection::TcpConnection(IOThread *io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr, NetAddr::s_ptr local_addr, TcpType type)
 
-            : m_io_thread(io_thread), m_peer_addr(std::move(peer_addr)), m_state(NotConnected), m_fd(fd),m_type(type) {
+            : m_io_thread(io_thread), m_peer_addr(std::move(peer_addr)),m_local_addr(std::move(local_addr)) ,m_state(NotConnected), m_fd(fd), m_type(type) {
         /**
          * 为什么红黑树上挂了那么多connection事件，这么就能找到对应对象的的m_in_buffer呢？
          * 1.首先epoll红黑树上的是epoll_event 对象
@@ -59,15 +60,16 @@ namespace talon {
         m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(fd);
         m_fd_event->setNonBlock();
         m_event_loop = m_io_thread->getEventLoop();//把事件往这个线程的epoll上挂
-        if(m_type == TcpType::TcpServerType){
+        if (m_type == TcpType::TcpServerType) {
+            m_dispatcher = std::make_shared<RpcDispatcher>();
             listenRead();
         }
-        m_coder =new TinyPBCoder();
+        m_coder = new TinyPBCoder();
 
     }
 
-    TcpConnection::TcpConnection(Eventloop *loop, int fd, int buffer_size, NetAddr::s_ptr peer_addr,TcpType type)
-            : m_event_loop(loop), m_peer_addr(std::move(peer_addr)), m_state(NotConnected), m_fd(fd),m_type(type) {
+    TcpConnection::TcpConnection(Eventloop *loop, int fd, int buffer_size, NetAddr::s_ptr peer_addr, NetAddr::s_ptr local_addr, TcpType type)
+            : m_event_loop(loop), m_peer_addr(std::move(peer_addr)),m_local_addr(std::move(local_addr)) ,m_state(NotConnected), m_fd(fd), m_type(type) {
 
         m_in_buffer = std::make_shared<TcpBuffer>(buffer_size);
         m_out_buffer = std::make_shared<TcpBuffer>(buffer_size);
@@ -77,10 +79,10 @@ namespace talon {
 
         /*如果是在服务端新建的一个连接，那肯定是要
         监听客户端发来的消息，所以开启写读事件的监听*/
-        if(m_type == TcpType::TcpServerType){
+        if (m_type == TcpType::TcpServerType) {
             listenRead();//这里的listenRead()就是在epoll红黑树上挂了一个读事件
         }
-       // m_coder = new StringCoder();
+        // m_coder = new StringCoder();
         m_coder = new TinyPBCoder();
     }
 
@@ -180,26 +182,28 @@ namespace talon {
 //            m_out_buffer->writeToBuffer(msg.c_str(), msg.length());
             std::vector<AbstractProtocol::s_ptr> result;
             std::vector<AbstractProtocol::s_ptr> replay_messages;
-            m_coder->decode(result,m_in_buffer);
-            for(const auto& i: result){
-                INFOLOG(" success get request[%s] from client[%s ]", i->m_msg_id.c_str(), m_peer_addr->toString().c_str());
-                std::shared_ptr<TinyPBProtocol> message  = std::make_shared<TinyPBProtocol>();
-                message->m_pb_data="hello. this is talon rpc test data";
-                message->m_msg_id= i->m_msg_id;
+            m_coder->decode(result, m_in_buffer);
+            for (const auto &i: result) {
+                INFOLOG(" success get request[%s] from client[%s ]", i->m_msg_id.c_str(),
+                        m_peer_addr->toString().c_str());
+                std::shared_ptr<TinyPBProtocol> message = std::make_shared<TinyPBProtocol>();
+//                message->m_pb_data="hello. this is talon rpc test data";
+//                message->m_msg_id= i->m_msg_id;
+                m_dispatcher->dispatch(i, message, nullptr);
                 replay_messages.emplace_back(message);
             }
 
-            m_coder->encode(replay_messages,m_out_buffer);
+            m_coder->encode(replay_messages, m_out_buffer);
             listenWrite();
 
         } else { // 客户端
             std::vector<AbstractProtocol::s_ptr> result;
-            m_coder ->decode(result,m_in_buffer);
-            for(int i = 0 ;i < result.size();++i){
+            m_coder->decode(result, m_in_buffer);
+            for (int i = 0; i < result.size(); ++i) {
                 std::string req_id = result[i]->getReqId();
                 auto it = m_read_dones.find(req_id);
 
-                if(it !=m_read_dones.end()){
+                if (it != m_read_dones.end()) {
                     auto func = it->second;
                     /*
                      * 异步编程中，某个对象可能会在回调函数中被使用。为了确保回调发生时对象仍然存在，
@@ -229,7 +233,8 @@ namespace talon {
         DEBUGLOG("ON onWrite");
 
         if (m_state != Connected) {
-            ERRORLOG("onWrite error, client has already disconneced, addr[%s], clientfd[%d]", m_peer_addr->toString().c_str(), m_fd);
+            ERRORLOG("onWrite error, client has already disconneced, addr[%s], clientfd[%d]",
+                     m_peer_addr->toString().c_str(), m_fd);
             return;
         }
 
@@ -239,13 +244,13 @@ namespace talon {
             DEBUGLOG("client --------------------------------------------------")
             std::vector<AbstractProtocol::s_ptr> messages;
 
-            for (auto & m_write_done_ : m_write_dones) {
+            for (auto &m_write_done_: m_write_dones) {
                 messages.push_back(m_write_done_.first);
             }
             m_coder->encode(messages, m_out_buffer); // 回写到m_out_buffer中
         }
         bool is_write_all = false;
-        while(true) {
+        while (true) {
             if (m_out_buffer->readAble() == 0) {
                 DEBUGLOG("no data need to send to client [%s]", m_peer_addr->toString().c_str());
                 is_write_all = true;
@@ -260,7 +265,8 @@ namespace talon {
                 DEBUGLOG("no data need to send to client [%s]", m_peer_addr->toString().c_str());
                 is_write_all = true;
                 break;
-            } if (rt == -1 && errno == EAGAIN) {
+            }
+            if (rt == -1 && errno == EAGAIN) {
                 // 发送缓冲区已满，不能再发送了。
                 // 这种情况我们等下次 fd 可写的时候再次发送数据即可
                 ERRORLOG("write data error, errno==EAGIN and rt == -1");
@@ -273,7 +279,7 @@ namespace talon {
         }
 
         if (m_type == TcpClientType) {
-            for (auto & m_w_done : m_write_dones) {
+            for (auto &m_w_done: m_write_dones) {
                 m_w_done.second(m_w_done.first);
             }
             m_write_dones.clear();
@@ -315,18 +321,30 @@ namespace talon {
     }
 
     void
-    TcpConnection::pushSendMessage(const AbstractProtocol::s_ptr& message,
-                                   const std::function<void(AbstractProtocol::s_ptr)>& done) {
+    TcpConnection::pushSendMessage(const AbstractProtocol::s_ptr &message,
+                                   const std::function<void(AbstractProtocol::s_ptr)> &done) {
         m_write_dones.emplace_back(message, done);
     }
 
     void
-    TcpConnection::pushReadMessage(const std::string& req_id, const std::function<void(AbstractProtocol::s_ptr)>&done) {
-        m_read_dones.insert(std::make_pair(req_id,done));
+    TcpConnection::pushReadMessage(const std::string &req_id,
+                                   const std::function<void(AbstractProtocol::s_ptr)> &done) {
+        m_read_dones.insert(std::make_pair(req_id, done));
 
     }
 
+    NetAddr::s_ptr TcpConnection::getLocalAddr() {
+        return m_local_addr;
+    }
 
+    NetAddr::s_ptr TcpConnection::getPeerAddr() {
+        return m_peer_addr;
+    }
+
+
+    void TcpConnection::reply(std::vector<AbstractProtocol::s_ptr> &replay_messages) {
+
+    }
 
 
 } // talon

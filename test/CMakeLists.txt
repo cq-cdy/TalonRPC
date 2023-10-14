@@ -69,8 +69,10 @@ add_executable(test_eventloop   test_eventloop.cc)
 add_executable(test_log  test_log.cc
         ../common/err_code.h)
 add_executable(test_client  test_client.cc)
-
 add_executable(test_tcp test_tcp.cc)
+add_executable(test_rpc_server test_rpc_server.cc order.pb.cc)
+add_executable(test_rpc_client test_rpc_client.cc order.pb.cc)
+
 
 
 aux_source_directory(../common COMMON_LIST)
@@ -83,8 +85,12 @@ target_sources(test_log PUBLIC ${COMMON_LIST} )
 target_sources(test_eventloop PUBLIC ${COMMON_LIST} ${NET_LIST} )
 target_sources(test_tcp PUBLIC ${COMMON_LIST} ${NET_LIST} ${TCP_LIST} ${CODER_LIST} ${RPC_LIST} )
 target_sources(test_client PUBLIC ${COMMON_LIST} ${NET_LIST}  ${TCP_LIST} ${CODER_LIST}  ${RPC_LIST} )
+target_sources(test_rpc_server PUBLIC ${COMMON_LIST} ${NET_LIST}  ${TCP_LIST} ${CODER_LIST}  ${RPC_LIST} )
+target_sources(test_rpc_client PUBLIC ${COMMON_LIST} ${NET_LIST}  ${TCP_LIST} ${CODER_LIST}  ${RPC_LIST} )
 
 target_link_libraries(test_log tinyxml pthread)
 target_link_libraries(test_eventloop tinyxml pthread)
 target_link_libraries(test_tcp tinyxml pthread protobuf)
 target_link_libraries(test_client tinyxml pthread protobuf)
+target_link_libraries(test_rpc_server tinyxml pthread protobuf)
+target_link_libraries(test_rpc_client tinyxml pthread protobuf)

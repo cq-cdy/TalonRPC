@@ -14,9 +14,10 @@ namespace talon {
     class TcpConnection;
     class RpcDispatcher {
     public:
+        static RpcDispatcher* GetRpcDispatcher();
         typedef std::shared_ptr<google::protobuf::Service> service_s_ptr;
         void dispatch(const AbstractProtocol::s_ptr& request,const AbstractProtocol::s_ptr& response ,talon::TcpConnection*);
-        void registerService(const service_s_ptr& service);
+        void registerService(const service_s_ptr service);
         void setTinyPBError(const std::shared_ptr<TinyPBProtocol>& msg,int32_t err_code,const std::string& err_info);
     private:
         bool parseServiceFullName(const std::string & full_name,std::string& service_name,std::string& method_name);

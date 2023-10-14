@@ -9,8 +9,10 @@
 #include "err_code.h"
 #include "rpc_controller.h"
 #include "tcp/tcp_connection.h"
+
 namespace talon {
-    void RpcDispatcher::dispatch(const AbstractProtocol::s_ptr &request, const AbstractProtocol::s_ptr &response,talon::TcpConnection* connection) {
+    void RpcDispatcher::dispatch(const AbstractProtocol::s_ptr &request, const AbstractProtocol::s_ptr &response,
+                                 talon::TcpConnection *connection) {
         std::shared_ptr<TinyPBProtocol> req_protocol = std::dynamic_pointer_cast<TinyPBProtocol>(request);
         std::shared_ptr<TinyPBProtocol> rsp_protocol = std::dynamic_pointer_cast<TinyPBProtocol>(response);
 
@@ -20,15 +22,15 @@ namespace talon {
         rsp_protocol->m_msg_id = req_protocol->m_msg_id;
         rsp_protocol->m_method_name = req_protocol->m_method_name;
 
-        if (parseServiceFullName(method_full_name, service_name, method_full_name)) {
+        if (!parseServiceFullName(method_full_name, service_name, method_name)) {
             setTinyPBError(rsp_protocol, ERROR_PARSE_SERVICE_NANE, "parse service name error");
             return;
         }
-
+        //std::shared_ptr<google::protobuf::Service>
+        // 启动服务的时候传入的，里面是OrderImpl（继承google::protobuf::Service）的实现的对象
         auto it = m_service_map.find(service_name);
         if (it == m_service_map.end()) {
-            ERRORLOG("%s sericve neame[%s] not found", req_protocol->m_msg_id.c_str()
-                     ,service_name.c_str());
+            ERRORLOG("%s sericve neame[%s] not found", req_protocol->m_msg_id.c_str(), service_name.c_str());
             setTinyPBError(rsp_protocol, ERROR_SERVICE_NOT_FOUND, "service not found");
             return;
 
@@ -38,16 +40,15 @@ namespace talon {
                 service->GetDescriptor()->FindMethodByName(method_name);
         if (method == nullptr) {
             ERRORLOG("%s method neame[%s] not found in service[%s ]",
-                     req_protocol->m_msg_id.c_str()
-            , method_name.c_str(), service_name.c_str());
-            setTinyPBError(rsp_protocol,ERROR_SERVICE_NOT_FOUND,"method not found");
+                     req_protocol->m_msg_id.c_str(), method_name.c_str(), service_name.c_str());
+            setTinyPBError(rsp_protocol, ERROR_SERVICE_NOT_FOUND, "method not found");
             return;
         }
 
         google::protobuf::Message *req_msg = service->GetRequestPrototype(method).New();
         if (!req_msg->ParseFromString(req_protocol->m_pb_data)) {
-            ERRORLOG("%s |deserilize error" , req_protocol->m_msg_id.c_str(), method_name.c_str(), service_name.c_str());
-            setTinyPBError(rsp_protocol,ERROR_FAILED_DESERIALIZE,"deserilize error");
+            ERRORLOG("%s |deserilize error", req_protocol->m_msg_id.c_str(), method_name.c_str(), service_name.c_str());
+            setTinyPBError(rsp_protocol, ERROR_FAILED_DESERIALIZE, "deserilize error");
             return;
 
         }
@@ -55,16 +56,19 @@ namespace talon {
                 req_protocol->m_msg_id.c_str(), req_msg->ShortDebugString().c_str());
 
         google::protobuf::Message *rsp_msg = service->GetResponsePrototype(method).New();
-        auto* rpc_controller = new RpcController();
+        auto *rpc_controller = new RpcController();
         rpc_controller->SetLocalAddr(connection->getLocalAddr());
         rpc_controller->SetPeerAddr(connection->getPeerAddr());
         rpc_controller->SetMsgId(req_protocol->m_msg_id);
+
+        //真正执行的rpc 方法
         service->CallMethod(method, rpc_controller, req_msg, rsp_msg, nullptr);
 
-        if(rsp_msg->SerializeToString(&(rsp_protocol->m_pb_data))){
-            ERRORLOG("%s | serilize error,origin message [s ]" ,
-                     req_protocol->m_msg_id.c_str(),rsp_msg->ShortDebugString().c_str());
-            setTinyPBError(rsp_protocol,ERROR_SERVICE_NOT_FOUND,"serilize error");
+
+        if (!rsp_msg->SerializeToString(&(rsp_protocol->m_pb_data))) {
+            ERRORLOG("%s | serilize error,origin message [s ]",
+                     req_protocol->m_msg_id.c_str(), rsp_msg->ShortDebugString().c_str());
+            setTinyPBError(rsp_protocol, ERROR_SERVICE_NOT_FOUND, "serilize error");
             return;
 
         }
@@ -75,11 +79,6 @@ namespace talon {
                 req_msg->ShortDebugString().c_str(),
                 rsp_msg->ShortDebugString().c_str());
 
-    }
-
-    void RpcDispatcher::registerService(const RpcDispatcher::service_s_ptr &service) {
-        auto name = service->GetDescriptor()->full_name();
-        m_service_map[name] = service;
     }
 
     bool RpcDispatcher::parseServiceFullName(const std::string &full_name, std::string &service_name,
@@ -103,10 +102,21 @@ namespace talon {
 
     void
     RpcDispatcher::setTinyPBError(const std::shared_ptr<TinyPBProtocol> &msg, int32_t err_code,
-                                  const std::string& err_info) {
+                                  const std::string &err_info) {
         msg->m_err_code = err_code;
         msg->m_err_info = err_info;
         msg->m_err_info_len = err_info.length();
+    }
+
+    static RpcDispatcher *g_rpc_dispatcher = new RpcDispatcher();;
+
+    RpcDispatcher *RpcDispatcher::GetRpcDispatcher() {
+        return g_rpc_dispatcher;
+    }
+
+    void RpcDispatcher::registerService(const RpcDispatcher::service_s_ptr service) {
+        auto name = service->GetDescriptor()->full_name();
+        m_service_map[name] = service;
     }
 
 } // talon

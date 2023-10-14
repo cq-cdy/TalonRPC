@@ -61,7 +61,6 @@ namespace talon {
         m_fd_event->setNonBlock();
         m_event_loop = m_io_thread->getEventLoop();//把事件往这个线程的epoll上挂
         if (m_type == TcpType::TcpServerType) {
-            m_dispatcher = std::make_shared<RpcDispatcher>();
             listenRead();
         }
         m_coder = new TinyPBCoder();
@@ -166,20 +165,6 @@ namespace talon {
 
     void TcpConnection::excute() {
         if (m_type == TcpServerType) {
-//            // 将 RPC 请求执行业务逻辑，获取 RPC 响应, 再把 RPC 响应发送回去
-//            std::vector<char> tmp;
-//            int size = m_in_buffer->readAble();
-//            tmp.resize(size);
-//            m_in_buffer->readFromBuffer(tmp, size);
-//
-//            std::string msg;
-//            for (char i: tmp) {
-//                msg += i;
-//            }
-//
-//            INFOLOG("success get request[%s] from client[%s]", msg.c_str(), m_peer_addr->toString().c_str());
-//
-//            m_out_buffer->writeToBuffer(msg.c_str(), msg.length());
             std::vector<AbstractProtocol::s_ptr> result;
             std::vector<AbstractProtocol::s_ptr> replay_messages;
             m_coder->decode(result, m_in_buffer);
@@ -189,7 +174,8 @@ namespace talon {
                 std::shared_ptr<TinyPBProtocol> message = std::make_shared<TinyPBProtocol>();
 //                message->m_pb_data="hello. this is talon rpc test data";
 //                message->m_msg_id= i->m_msg_id;
-                m_dispatcher->dispatch(i, message, nullptr);
+                auto dispatcher = RpcDispatcher::GetRpcDispatcher();
+                dispatcher->dispatch(i, message, this);
                 replay_messages.emplace_back(message);
             }
 

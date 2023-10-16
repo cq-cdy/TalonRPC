@@ -68,10 +68,20 @@ add_executable(test_eventloop   test_eventloop.cc)
 
 add_executable(test_log  test_log.cc
         ../common/err_code.h)
-add_executable(test_client  test_client.cc)
+add_executable(test_client  test_client.cc
+        ../net/rpc/msg_id_util.cc
+        ../net/rpc/msg_id_util.h)
 add_executable(test_tcp test_tcp.cc)
-add_executable(test_rpc_server test_rpc_server.cc order.pb.cc)
-add_executable(test_rpc_client test_rpc_client.cc order.pb.cc)
+add_executable(test_rpc_server test_rpc_server.cc order.pb.cc
+        ../net/rpc/rpc_channel.cc
+        ../net/rpc/rpc_channel.h
+        ../net/rpc/msg_id_util.cc
+        ../net/rpc/msg_id_util.h)
+add_executable(test_rpc_client test_rpc_client.cc order.pb.cc
+        ../net/rpc/rpc_channel.cc
+        ../net/rpc/rpc_channel.h
+        ../net/rpc/msg_id_util.cc
+        ../net/rpc/msg_id_util.h)
 
 
 

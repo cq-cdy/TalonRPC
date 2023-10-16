@@ -79,7 +79,6 @@ namespace talon {
 
         void reply(std::vector<AbstractProtocol::s_ptr>& replay_messages);
     private:
-
         IOThread *m_io_thread{nullptr};
         Eventloop *m_event_loop{nullptr};
         NetAddr::s_ptr m_local_addr;

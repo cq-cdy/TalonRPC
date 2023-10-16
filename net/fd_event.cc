@@ -32,19 +32,29 @@ namespace  talon
     std::function<void()> Fd_Event::handler(TriggerEvent event) {
         if (event == TriggerEvent::IN_EVENT) {
             return m_read_callback;
-        } else {
+        } else if (event == TriggerEvent::OUT_EVENT) {
             return m_write_callback;
+        }else if (event == TriggerEvent::ERROR_EVENT){
+            return m_err_callback;
         }
+        return nullptr;
     }
 
 
-    void Fd_Event::listen(TriggerEvent event_type, std::function<void()> callback) {
+    void Fd_Event::listen(TriggerEvent event_type, const std::function<void()>& callback,
+                          const std::function<void()>& error_callback) {
         if (event_type == TriggerEvent::IN_EVENT) {
             m_listen_event.events |= EPOLLIN;
             m_read_callback = callback;
         } else {
             m_listen_event.events |= EPOLLOUT;
             m_write_callback = callback;
+        }
+
+        if (m_err_callback == nullptr) {
+            m_err_callback = error_callback;
+        } else {
+            m_err_callback = nullptr;
         }
 
         m_listen_event.data.ptr = this;

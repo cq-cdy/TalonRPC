@@ -20,5 +20,6 @@ const int ERROR_RPC_CALL_TIMEOUT = SYS_ERROR_PREFIX(0007);// rpc 调用超时
 const int ERROR_SERVICE_NOT_FOUND = SYS_ERROR_PREFIX(0008);// service 不存在
 const int ERROR_METHOD_NOT_FOUND = SYS_ERROR_PREFIX(0009);//method 不存在method
 const int ERROR_PARSE_SERVICE_NANE = SYS_ERROR_PREFIX(0010); // service name 解析失败
+const int ERROR_CHANNEL_INIT = SYS_ERROR_PREFIX(0011); // RPC channel falied 解析失败
 
 #endif //TALON_RPC_ERR_H

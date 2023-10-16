@@ -74,9 +74,7 @@ void test_tcp_connect(){
 int main() {
 
     talon::Config::SetGlobalConfig("../conf/talon.xml");
-
     talon::Logger::InitGlobalLogger();
-
    // test_connect();
    test_tcp_connect();
     return 0;

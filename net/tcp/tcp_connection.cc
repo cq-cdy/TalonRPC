@@ -185,8 +185,8 @@ namespace talon {
         } else { // 客户端
             std::vector<AbstractProtocol::s_ptr> result;
             m_coder->decode(result, m_in_buffer);
-            for (int i = 0; i < result.size(); ++i) {
-                std::string req_id = result[i]->getReqId();
+            for (auto & i : result) {
+                std::string req_id = i->getReqId();
                 auto it = m_read_dones.find(req_id);
 
                 if (it != m_read_dones.end()) {
@@ -196,7 +196,7 @@ namespace talon {
                      * 你可以使用 std::enable_shared_from_this 从当前对象获取一个 shared_ptr，
                      * 并确保其生命周期被正确管理。
                      */
-                    func(result[i]->shared_from_this());
+                    func(i->shared_from_this());
                 }
 
             }
@@ -310,6 +310,7 @@ namespace talon {
     TcpConnection::pushSendMessage(const AbstractProtocol::s_ptr &message,
                                    const std::function<void(AbstractProtocol::s_ptr)> &done) {
         m_write_dones.emplace_back(message, done);
+    
     }
 
     void
@@ -329,7 +330,6 @@ namespace talon {
 
 
     void TcpConnection::reply(std::vector<AbstractProtocol::s_ptr> &replay_messages) {
-
     }
 
 

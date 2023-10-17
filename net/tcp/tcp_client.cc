@@ -75,7 +75,7 @@ void talon::TcpClient::connect(const std::function<void()> &done) {
                         m_connect_errcode = ERROR_FAILED_CONNECT;
                         m_connect_error_info = "connect unkonwn error，sys error = " + std::string(strerror(errno));
                     }
-                    ERRORLOG("connect errror,errno=%d，error=%s", errno, strerror(errno));
+                    ERRORLOG("connect errror,errno=%d,error=%s", errno, strerror(errno));
                     close(m_fd);
                     m_fd = socket(m_peer_addr->getFamily(), SOCK_STREAM, 0);
                 }

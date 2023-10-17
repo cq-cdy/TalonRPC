@@ -20,7 +20,7 @@ class RpcChannel : public google::protobuf::RpcChannel,
     typedef std::shared_ptr<google::protobuf::Closure> closure_s_ptr;
 
     RpcChannel(NetAddr::s_ptr peer_addr);
-    ~RpcChannel() override;
+     ~RpcChannel();
 
     void CallMethod(const google::protobuf::MethodDescriptor *method,
                     google::protobuf::RpcController *controller,

@@ -43,18 +43,17 @@ namespace talon {
     }
 
     void RpcController::NotifyOnCancel(google::protobuf::Closure* callback) {
-        INFOLOG("call the NotifyOnCancel --------------------------------")
 
     }
 
 
-    void RpcController::SetError(int32_t error_code, const std::string& error_info) {
+    void RpcController::SetError(int32_t error_code, const std::string error_info) {
         m_error_code = error_code;
         m_error_info = error_info;
         m_is_failed = true;
     }
 
-    int32_t RpcController::GetErrorCode() const {
+    int32_t RpcController::GetErrorCode() {
         return m_error_code;
     }
 
@@ -71,11 +70,11 @@ namespace talon {
     }
 
     void RpcController::SetLocalAddr(NetAddr::s_ptr addr) {
-        m_local_addr = std::move(addr);
+        m_local_addr = addr;
     }
 
     void RpcController::SetPeerAddr(NetAddr::s_ptr addr) {
-        m_peer_addr = std::move(addr);
+        m_peer_addr = addr;
     }
 
     NetAddr::s_ptr RpcController::GetLocalAddr() {
@@ -90,11 +89,11 @@ namespace talon {
         m_timeout = timeout;
     }
 
-    int RpcController::GetTimeout() const {
+    int RpcController::GetTimeout() {
         return m_timeout;
     }
 
-    bool RpcController::Finished() const {
+    bool RpcController::Finished() {
         return m_is_finished;
     }
 

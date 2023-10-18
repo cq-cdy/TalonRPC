@@ -6,27 +6,32 @@
 #define TALON_RPC_TIMER_H
 #include "fd_event.h"
 #include "map"
-#include "mutex"
+#include "mutex.h"
 #include "timer_event.h"
 namespace talon {
 
-class Timer : public Fd_Event {
-   public:
-    Timer();
+    class Timer : public Fd_Event {
+    public:
 
-    ~Timer();
+        Timer();
 
-    void addTimerEvent(const TimerEvent::s_ptr& event);
+        ~Timer();
 
-    void deleteTimerEvent(const TimerEvent::s_ptr& event);
+        void addTimerEvent(const TimerEvent::s_ptr& event);
 
-    void onTimer();  // 当发送了 IO 事件后，eventloop 会执行这个回调函数
+        void deleteTimerEvent(const TimerEvent::s_ptr& event);
 
-   private:
-    std::multimap<int64_t, TimerEvent::s_ptr> m_pending_events;
-    std::mutex m_mutex;
-    void resetArriveTime();
-};
+        void onTimer(); // 当发送了 IO 事件后，eventloop 会执行这个回调函数
+
+    private:
+        void resetArriveTime();
+
+    private:
+        std::multimap<int64_t, TimerEvent::s_ptr> m_pending_events;
+        Mutex m_mutex;
+
+    };
+
 
 }  // namespace talon
 

@@ -33,7 +33,7 @@ namespace talon {
     }
 
     Fd_Event* FdEventGroup::getFdEvent(int fd) {
-        std::scoped_lock lock(m_mutex);
+        ScopeMutex<Mutex> lock(m_mutex);
         if ((size_t) fd < m_fd_group.size()) {
             return m_fd_group[fd];
         }

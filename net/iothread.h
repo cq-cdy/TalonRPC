@@ -10,35 +10,35 @@
 #include "eventloop.h"
 
 namespace talon {
-    class IOThreadGroup;
-    class IOThread {
 
+    class IOThread {
     public:
-        friend IOThreadGroup;
         IOThread();
 
         ~IOThread();
 
-        Eventloop *getEventLoop();
+        Eventloop* getEventLoop();
 
-
-    public:
-
-
-    private:
-        static void *Main(void *arg);
         void start();
 
         void join() const;
 
-    private:
-        pid_t m_thread_id{-1};
-        pthread_t m_thread{0};
+    public:
+        static void* Main(void* arg);
 
-        Eventloop *m_event_loop{nullptr};
-        sem_t m_init_semaphore{};
-        sem_t m_start_semaphore{};
+
+    private:
+        pid_t m_thread_id {-1};    // 线程号
+        pthread_t m_thread {0};   // 线程句柄
+
+        Eventloop* m_event_loop {nullptr}; // 当前 io 线程的 loop 对象
+
+        sem_t m_init_semaphore;
+
+        sem_t m_start_semaphore;
+
     };
+
 
 }
 

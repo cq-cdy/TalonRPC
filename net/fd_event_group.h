@@ -7,25 +7,26 @@
 #include "string"
 #include "vector"
 #include "fd_event.h"
-#include "mutex"
+#include "mutex.h"
 
 namespace talon {
-
-    class FdEventGroup  {
+    class FdEventGroup {
     public:
 
-        ~FdEventGroup();
-        Fd_Event* getFdEvent(int fd);
-        static FdEventGroup* GetFdEventGroup();
-    private:
-        FdEventGroup(int size);
-    private:
-        int m_size{0};
-        std::vector<Fd_Event*> m_fd_group;
-        std::mutex m_mutex;
+    FdEventGroup(int size);
 
-    };
+    ~FdEventGroup();
+    Fd_Event* getFdEvent(int fd);
 
+    public:
+    static FdEventGroup* GetFdEventGroup();
+
+    private:
+    int m_size {0};
+    std::vector<Fd_Event*> m_fd_group;
+    Mutex m_mutex;
+
+};
 
 
 } // talon

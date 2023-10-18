@@ -10,13 +10,15 @@
 
 namespace talon {
 
+
     class TimerEvent {
+
     public:
         typedef std::shared_ptr<TimerEvent> s_ptr;
 
         TimerEvent(int interval, bool is_repeated, std::function<void()> cb);
 
-        int64_t getArriveTime() const {
+        [[nodiscard]] int64_t getArriveTime() const {
             return m_arrive_time;
         }
 
@@ -37,16 +39,18 @@ namespace talon {
         }
 
         void resetArriveTime();
-    private:
 
+    private:
         int64_t m_arrive_time{};    // ms
         int64_t m_interval;       // ms
-        bool m_is_repeated{false};
+        bool m_is_repeated {false};
+        bool m_is_cancled {false};
 
-        bool m_is_cancled{false};
         std::function<void()> m_task;
-    };
 
+
+
+    };
 
 } // talon
 

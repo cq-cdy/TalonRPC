@@ -15,7 +15,7 @@ namespace talon {
 
     class TcpServer {
     public:
-        TcpServer( NetAddr::s_ptr  local_addr);
+        TcpServer(NetAddr::s_ptr local_addr);
 
         ~TcpServer();
 
@@ -28,6 +28,10 @@ namespace talon {
         // 当有新客户端连接之后需要执行
         void onAccept();
 
+        // 清除 closed 的连接
+        void ClearClientTimerFunc();
+
+
     private:
         TcpAcceptor::s_ptr m_acceptor;
 
@@ -37,14 +41,15 @@ namespace talon {
 
         IOThreadGroup* m_io_thread_group {nullptr};   // subReactor 组
 
-        Fd_Event* m_listen_fd_event{};
+        Fd_Event* m_listen_fd_event;
 
         int m_client_counts {0};
 
         std::set<TcpConnection::s_ptr> m_client;
 
-    };
+        TimerEvent::s_ptr m_clear_client_timer_event;
 
+    };
 } // talon
 
 #endif //TALON_RPC_TCP_SERVER_H

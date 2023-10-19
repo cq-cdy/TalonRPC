@@ -55,13 +55,14 @@ namespace talon {
 
         m_main_event_loop->addEpollEvent(m_listen_fd_event);
 
-        m_clear_client_timer_event = std::make_shared<TimerEvent>(5000, true, std::bind(&TcpServer::ClearClientTimerFunc, this));
+        m_clear_client_timer_event = std::make_shared<TimerEvent>(5000, true, [this] { ClearClientTimerFunc(); });
         m_main_event_loop->addTimerEvent(m_clear_client_timer_event);
 
     }
 
 
     void TcpServer::onAccept() {
+        // 阻塞等待连接
         auto re = m_acceptor->accept();
         int client_fd = re.first;
         NetAddr::s_ptr peer_addr = re.second;
@@ -81,7 +82,6 @@ namespace talon {
     void TcpServer::start() {
         m_io_thread_group->start();
         m_main_event_loop->loop();
-        DEBUGLOG("TESESSSSSS")
     }
 
 

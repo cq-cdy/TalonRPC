@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
     talon::Config::SetGlobalConfig("../conf/talon.xml");
 
     talon::Logger::InitGlobalLogger();
-    DEBUGLOG("TEST LOG..............")
     std::shared_ptr<OrderImpl> service = std::make_shared<OrderImpl>();
     talon::RpcDispatcher::GetRpcDispatcher()->registerService(service);
 

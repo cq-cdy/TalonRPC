@@ -4,6 +4,8 @@
 
 #include "tcp_client.h"
 
+#include <utility>
+
 #include "cstring"
 #include "err_code.h"
 #include "eventloop.h"
@@ -13,7 +15,7 @@
 #include "sys/socket.h"
 #include "unistd.h"
 namespace talon{
-    TcpClient::TcpClient(NetAddr::s_ptr peer_addr) : m_peer_addr(peer_addr) {
+    TcpClient::TcpClient(const NetAddr::s_ptr& peer_addr) : m_peer_addr(peer_addr) {
         m_event_loop = Eventloop::GetCurrentEventLoop();
         m_fd = socket(peer_addr->getFamily(), SOCK_STREAM, 0);
 
@@ -39,7 +41,7 @@ namespace talon{
 
 // 异步的进行 conenct
 // 如果connect 成功，done 会被执行
-    void TcpClient::connect(std::function<void()> done) {
+    void TcpClient::connect(const std::function<void()>& done) {
         int rt = ::connect(m_fd, m_peer_addr->getSockAddr(), m_peer_addr->getSockLen());
         if (rt == 0) {
             DEBUGLOG("connect [%s] sussess", m_peer_addr->toString().c_str());
@@ -106,10 +108,10 @@ namespace talon{
 
 // 异步的发送 message
 // 如果发送 message 成功，会调用 done 函数， 函数的入参就是 message 对象
-    void TcpClient::writeMessage(AbstractProtocol::s_ptr message, std::function<void(AbstractProtocol::s_ptr)> done) {
+    void TcpClient::writeMessage(const AbstractProtocol::s_ptr& message, std::function<void(AbstractProtocol::s_ptr)> done) {
         // 1. 把 message 对象写入到 Connection 的 buffer, done 也写入
         // 2. 启动 connection 可写事件
-        m_connection->pushSendMessage(message, done);
+        m_connection->pushSendMessage(message, std::move(done));
         m_connection->listenWrite();
 
     }
@@ -120,11 +122,11 @@ namespace talon{
     void TcpClient::readMessage(const std::string& msg_id, std::function<void(AbstractProtocol::s_ptr)> done) {
         // 1. 监听可读事件
         // 2. 从 buffer 里 decode 得到 message 对象, 判断是否 msg_id 相等，相等则读成功，执行其回调
-        m_connection->pushReadMessage(msg_id, done);
+        m_connection->pushReadMessage(msg_id, std::move(done));
         m_connection->listenRead();
     }
 
-    int TcpClient::getConnectErrorCode() {
+    int TcpClient::getConnectErrorCode() const {
         return m_connect_error_code;
     }
 
@@ -142,7 +144,7 @@ namespace talon{
     }
 
     void TcpClient::initLocalAddr() {
-        sockaddr_in local_addr;
+        sockaddr_in local_addr{};
         socklen_t len = sizeof(local_addr);
 
         int ret = getsockname(m_fd, reinterpret_cast<sockaddr*>(&local_addr), &len);
@@ -156,7 +158,7 @@ namespace talon{
     }
 
 
-    void TcpClient::addTimerEvent(TimerEvent::s_ptr timer_event) {
+    void TcpClient::addTimerEvent(const TimerEvent::s_ptr& timer_event) {
         m_event_loop->addTimerEvent(timer_event);
     }
 }

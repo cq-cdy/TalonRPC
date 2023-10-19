@@ -15,17 +15,17 @@ namespace talon {
     public:
         typedef std::shared_ptr<TcpClient> s_ptr;
 
-        TcpClient(NetAddr::s_ptr peer_addr);
+        TcpClient(const NetAddr::s_ptr& peer_addr);
 
         ~TcpClient();
 
         // 异步的进行 conenct
         // 如果 connect 完成，done 会被执行
-        void connect(std::function<void()> done);
+        void connect(const std::function<void()>& done);
 
         // 异步的发送 message
         // 如果发送 message 成功，会调用 done 函数， 函数的入参就是 message 对象
-        void writeMessage(AbstractProtocol::s_ptr message, std::function<void(AbstractProtocol::s_ptr)> done);
+        void writeMessage(const AbstractProtocol::s_ptr& message, std::function<void(AbstractProtocol::s_ptr)> done);
 
 
         // 异步的读取 message
@@ -34,7 +34,7 @@ namespace talon {
 
         void stop();
 
-        int getConnectErrorCode();
+        int getConnectErrorCode() const;
 
         std::string getConnectErrorInfo();
 
@@ -44,7 +44,7 @@ namespace talon {
 
         void initLocalAddr();
 
-        void addTimerEvent(TimerEvent::s_ptr timer_event);
+        void addTimerEvent(const TimerEvent::s_ptr& timer_event);
 
 
     private:

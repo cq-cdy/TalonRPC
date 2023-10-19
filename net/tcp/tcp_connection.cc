@@ -41,9 +41,9 @@ namespace talon {
        */
 
     // 因为需要向某个已经在某个线程的epoll中确定的建立连接监听的文件描述符上进行读写，
-    //所哟*io_thread就是这个文件描述符所在的epoll所在的线程
+    //所以*io_thread就是这个文件描述符所在的epoll所在的线程
     TcpConnection::TcpConnection(Eventloop* event_loop, int fd, int buffer_size, NetAddr::s_ptr peer_addr, NetAddr::s_ptr local_addr, TcpConnectionType type /*= TcpConnectionByServer*/)
-            : m_event_loop(event_loop), m_local_addr(local_addr), m_peer_addr(peer_addr), m_state(NotConnected), m_fd(fd), m_connection_type(type) {
+            : m_event_loop(event_loop), m_local_addr(std::move(local_addr)), m_peer_addr(std::move(peer_addr)), m_state(NotConnected), m_fd(fd), m_connection_type(type) {
 
         m_in_buffer = std::make_shared<TcpBuffer>(buffer_size);
         m_out_buffer = std::make_shared<TcpBuffer>(buffer_size);
@@ -63,7 +63,7 @@ namespace talon {
         DEBUGLOG("~TcpConnection");
         if (m_coder) {
             delete m_coder;
-            m_coder = NULL;
+            m_coder = nullptr;
         }
     }
 
@@ -77,7 +77,7 @@ namespace talon {
 
         bool is_read_all = false;
         bool is_close = false;
-        while(!is_read_all) {
+        while(true) {
             if (m_in_buffer->writeAble() == 0) {
                 m_in_buffer->resizeBuffer(2 * m_in_buffer->m_buffer.size());
             }
@@ -110,10 +110,6 @@ namespace talon {
             return;
         }
 
-        if (!is_read_all) {
-            ERRORLOG("not read all data");
-        }
-
         // TODO: 简单的 echo, 后面补充 RPC 协议解析
         excute();
 
@@ -124,16 +120,16 @@ namespace talon {
             // 将 RPC 请求执行业务逻辑，获取 RPC 响应, 再把 RPC 响应发送回去
             std::vector<AbstractProtocol::s_ptr> result;
             m_coder->decode(result, m_in_buffer);
-            for (size_t i = 0;  i < result.size(); ++i) {
+            for (auto & i : result) {
                 // 1. 针对每一个请求，调用 rpc 方法，获取响应 message
                 // 2. 将响应 message 放入到发送缓冲区，监听可写事件回包
-                INFOLOG("success get request[%s] from client[%s]", result[i]->m_msg_id.c_str(), m_peer_addr->toString().c_str());
+                INFOLOG("success get request[%s] from client[%s]", i->m_msg_id.c_str(), m_peer_addr->toString().c_str());
 
                 std::shared_ptr<TinyPBProtocol> message = std::make_shared<TinyPBProtocol>();
                 // message->m_pb_data = "hello. this is talon rpc test data";
                 // message->m_msg_id = result[i]->m_msg_id;
 
-                RpcDispatcher::GetRpcDispatcher()->dispatch(result[i], message, this);
+                RpcDispatcher::GetRpcDispatcher()->dispatch(i, message, this);
             }
 
         } else {
@@ -141,11 +137,11 @@ namespace talon {
             std::vector<AbstractProtocol::s_ptr> result;
             m_coder->decode(result, m_in_buffer);
 
-            for (size_t i = 0; i < result.size(); ++i) {
-                std::string msg_id = result[i]->m_msg_id;
+            for (auto & i : result) {
+                std::string msg_id = i->m_msg_id;
                 auto it = m_read_dones.find(msg_id);
                 if (it != m_read_dones.end()) {
-                    it->second(result[i]);
+                    it->second(i);
                     m_read_dones.erase(it);
                 }
             }
@@ -174,8 +170,8 @@ namespace talon {
 
             std::vector<AbstractProtocol::s_ptr> messages;
 
-            for (size_t i = 0; i< m_write_dones.size(); ++i) {
-                messages.push_back(m_write_dones[i].first);
+            for (auto & m_write_done : m_write_dones) {
+                messages.push_back(m_write_done.first);
             }
 
             m_coder->encode(messages, m_out_buffer);
@@ -210,8 +206,8 @@ namespace talon {
         }
 
         if (m_connection_type == TcpConnectionByClient) {
-            for (size_t i = 0; i < m_write_dones.size(); ++i) {
-                m_write_dones[i].second(m_write_dones[i].first);
+            for (auto & m_write_done : m_write_dones) {
+                m_write_done.second(m_write_done.first);
             }
             m_write_dones.clear();
         }
@@ -259,26 +255,26 @@ namespace talon {
         m_connection_type = type;
     }
 
-
+    //isInLoopThread()
     void TcpConnection::listenWrite() {
 
-        m_fd_event->listen(Fd_Event::OUT_EVENT, std::bind(&TcpConnection::onWrite, this));
+        m_fd_event->listen(Fd_Event::OUT_EVENT, [this] { onWrite(); });
         m_event_loop->addEpollEvent(m_fd_event);
     }
 
-
+    // ！isInLoopThread()
     void TcpConnection::listenRead() {
 
-        m_fd_event->listen(Fd_Event::IN_EVENT, std::bind(&TcpConnection::onRead, this));
+        m_fd_event->listen(Fd_Event::IN_EVENT, [this] { onRead(); });
         m_event_loop->addEpollEvent(m_fd_event);
     }
 
 
-    void TcpConnection::pushSendMessage(AbstractProtocol::s_ptr message, std::function<void(AbstractProtocol::s_ptr)> done) {
-        m_write_dones.push_back(std::make_pair(message, done));
+    void TcpConnection::pushSendMessage(const AbstractProtocol::s_ptr& message, std::function<void(AbstractProtocol::s_ptr)> done) {
+        m_write_dones.emplace_back(message, done);
     }
 
-    void TcpConnection::pushReadMessage(const std::string& msg_id, std::function<void(AbstractProtocol::s_ptr)> done) {
+    void TcpConnection::pushReadMessage(const std::string& msg_id, const std::function<void(AbstractProtocol::s_ptr)>& done) {
         m_read_dones.insert(std::make_pair(msg_id, done));
     }
 

@@ -14,25 +14,25 @@ namespace talon {
 
     public:
         RpcController() { INFOLOG("RpcController"); }
-        ~RpcController() { INFOLOG("~RpcController"); }
+        ~RpcController() override { INFOLOG("~RpcController"); }
 
-        void Reset();
+        void Reset() override;
 
-        bool Failed() const;
+        bool Failed() const override;
 
-        std::string ErrorText() const;
+        std::string ErrorText() const override;
 
-        void StartCancel();
+        void StartCancel() override;
 
-        void SetFailed(const std::string& reason);
+        void SetFailed(const std::string& reason) override;
 
-        bool IsCanceled() const;
+        bool IsCanceled() const override;
 
-        void NotifyOnCancel(google::protobuf::Closure* callback);
+        void NotifyOnCancel(google::protobuf::Closure* callback) override;
 
-        void SetError(int32_t error_code, const std::string error_info);
+        void SetError(int32_t error_code, const std::string& error_info);
 
-        int32_t GetErrorCode();
+        int32_t GetErrorCode() const;
 
         std::string GetErrorInfo();
 
@@ -50,9 +50,9 @@ namespace talon {
 
         void SetTimeout(int timeout);
 
-        int GetTimeout();
+        int GetTimeout() const;
 
-        bool Finished();
+        bool Finished() const;
 
         void SetFinished(bool value);
 

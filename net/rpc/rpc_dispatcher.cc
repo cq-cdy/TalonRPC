@@ -19,10 +19,10 @@ namespace talon {
     XX = NULL;      \
   }                 \
 
-    static RpcDispatcher* g_rpc_dispatcher = NULL;
+    static RpcDispatcher* g_rpc_dispatcher = nullptr;
 
     RpcDispatcher* RpcDispatcher::GetRpcDispatcher() {
-        if (g_rpc_dispatcher != NULL) {
+        if (g_rpc_dispatcher != nullptr) {
             return g_rpc_dispatcher;
         }
         g_rpc_dispatcher = new RpcDispatcher;
@@ -55,7 +55,7 @@ namespace talon {
         service_s_ptr service = (*it).second;
 
         const google::protobuf::MethodDescriptor* method = service->GetDescriptor()->FindMethodByName(method_name);
-        if (method == NULL) {
+        if (method == nullptr) {
             ERRORLOG("%s | method neame[%s] not found in service[%s]", req_protocol->m_msg_id.c_str(), method_name.c_str(), service_name.c_str());
             setTinyPBError(rsp_protocol, ERROR_SERVICE_NOT_FOUND, "method not found");
             return;
@@ -75,7 +75,7 @@ namespace talon {
 
         google::protobuf::Message* rsp_msg = service->GetResponsePrototype(method).New();
 
-        RpcController* rpc_controller = new RpcController();
+        auto* rpc_controller = new RpcController();
         rpc_controller->SetLocalAddr(connection->getLocalAddr());
         rpc_controller->SetPeerAddr(connection->getPeerAddr());
         rpc_controller->SetMsgId(req_protocol->m_msg_id);
@@ -95,7 +95,7 @@ namespace talon {
 
             std::vector<AbstractProtocol::s_ptr> replay_messages;
             replay_messages.emplace_back(rsp_protocol);
-            connection->reply(replay_messages);
+            connection->reply(replay_messages); // 监听写
 
         });
 
@@ -127,7 +127,7 @@ namespace talon {
     }
 
 
-    void RpcDispatcher::registerService(service_s_ptr service) {
+    void RpcDispatcher::registerService(const service_s_ptr& service) {
         std::string service_name = service->GetDescriptor()->full_name();
         m_service_map[service_name] = service;
 

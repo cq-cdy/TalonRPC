@@ -87,7 +87,7 @@ namespace talon {
         if (!m_is_init) {
             std::string err_info = "RpcChannel not call init()";
             my_controller->SetError(ERROR_RPC_CHANNEL_INIT, err_info);
-            ERRORLOG("%s | %s, RpcChannel not init ", req_protocol->m_msg_id.c_str(), err_info.c_str());
+            ERRORLOG("%s | %s, RpcChannel not init ", req_protocol->m_msg_id.c_str(), err_info.c_str())
             callBack();
             return;
         }
@@ -143,7 +143,7 @@ namespace talon {
             INFOLOG("%s | connect success, peer addr[%s], local addr[%s]",
                     req_protocol->m_msg_id.c_str(),
                     getTcpClient()->getPeerAddr()->toString().c_str(),
-                    getTcpClient()->getLocalAddr()->toString().c_str());
+                    getTcpClient()->getLocalAddr()->toString().c_str())
 
             getTcpClient()->writeMessage(req_protocol,
                                          [req_protocol, this, my_controller](const AbstractProtocol::s_ptr &) mutable {
@@ -154,7 +154,7 @@ namespace talon {
                                                      getTcpClient()->getLocalAddr()->toString().c_str());
 
                                              getTcpClient()->readMessage(req_protocol->m_msg_id, [this, my_controller](
-                                                     AbstractProtocol::s_ptr msg) mutable {
+                                                     const AbstractProtocol::s_ptr& msg) mutable {
                                                  std::shared_ptr<talon::TinyPBProtocol> rsp_protocol = std::dynamic_pointer_cast<talon::TinyPBProtocol>(
                                                          msg);
                                                  INFOLOG("%s | success get rpc response, call method name[%s], peer addr[%s], local addr[%s]",
@@ -199,7 +199,6 @@ namespace talon {
         });
 
     }
-
 
     void RpcChannel::Init(controller_s_ptr controller, message_s_ptr req, message_s_ptr res, closure_s_ptr done) {
         if (m_is_init) {

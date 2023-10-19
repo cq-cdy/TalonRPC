@@ -47,13 +47,13 @@ namespace talon {
     }
 
 
-    void RpcController::SetError(int32_t error_code, const std::string error_info) {
+    void RpcController::SetError(int32_t error_code, const std::string& error_info) {
         m_error_code = error_code;
         m_error_info = error_info;
         m_is_failed = true;
     }
 
-    int32_t RpcController::GetErrorCode() {
+    int32_t RpcController::GetErrorCode() const {
         return m_error_code;
     }
 
@@ -70,11 +70,11 @@ namespace talon {
     }
 
     void RpcController::SetLocalAddr(NetAddr::s_ptr addr) {
-        m_local_addr = addr;
+        m_local_addr = std::move(addr);
     }
 
     void RpcController::SetPeerAddr(NetAddr::s_ptr addr) {
-        m_peer_addr = addr;
+        m_peer_addr = std::move(addr);
     }
 
     NetAddr::s_ptr RpcController::GetLocalAddr() {
@@ -89,11 +89,11 @@ namespace talon {
         m_timeout = timeout;
     }
 
-    int RpcController::GetTimeout() {
+    int RpcController::GetTimeout() const {
         return m_timeout;
     }
 
-    bool RpcController::Finished() {
+    bool RpcController::Finished() const {
         return m_is_finished;
     }
 

@@ -39,7 +39,7 @@ namespace talon{
 
         void addTimerEvent(const TimerEvent::s_ptr& event);
 
-        bool isLooping();
+        bool isLooping() const;
 
     public:
         static Eventloop* GetCurrentEventLoop();

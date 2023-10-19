@@ -65,9 +65,9 @@ namespace talon {
         // 启动监听可读事件
         void listenRead();
 
-        void pushSendMessage(AbstractProtocol::s_ptr message, std::function<void(AbstractProtocol::s_ptr)> done);
+        void pushSendMessage(const AbstractProtocol::s_ptr& message, std::function<void(AbstractProtocol::s_ptr)> done);
 
-        void pushReadMessage(const std::string& msg_id, std::function<void(AbstractProtocol::s_ptr)> done);
+        void pushReadMessage(const std::string& msg_id, const std::function<void(AbstractProtocol::s_ptr)>& done);
 
         NetAddr::s_ptr getLocalAddr();
 
@@ -77,7 +77,7 @@ namespace talon {
 
     private:
 
-        Eventloop* m_event_loop {NULL};   // 代表持有该连接的 IO 线程
+        Eventloop* m_event_loop {nullptr};   // 代表持有该连接的 IO 线程
 
         NetAddr::s_ptr m_local_addr;
         NetAddr::s_ptr m_peer_addr;

@@ -197,6 +197,10 @@ namespace talon {
     }
 
     void Eventloop::addEpollEvent(Fd_Event* event) {
+
+        /**
+         * 如果 b
+         */
         if (isInLoopThread()) {
             ADD_TO_EPOLL();
         } else {
@@ -244,7 +248,7 @@ namespace talon {
 
 
 
-    bool Eventloop::isLooping() {
+    bool Eventloop::isLooping() const {
         return m_is_looping;
     }
 

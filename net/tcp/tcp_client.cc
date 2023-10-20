@@ -122,7 +122,7 @@ namespace talon{
     void TcpClient::readMessage(const std::string& msg_id, std::function<void(AbstractProtocol::s_ptr)> done) {
         // 1. 监听可读事件
         // 2. 从 buffer 里 decode 得到 message 对象, 判断是否 msg_id 相等，相等则读成功，执行其回调
-        m_connection->pushReadMessage(msg_id, std::move(done));
+        m_connection->pushReadMessage(msg_id, done);
         m_connection->listenRead();
     }
 

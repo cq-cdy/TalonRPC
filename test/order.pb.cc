@@ -80,13 +80,14 @@ const char descriptor_table_protodef_order_2eproto[] PROTOBUF_SECTION_VARIABLE(p
   "\n\013order.proto\"0\n\020makeOrderRequest\022\r\n\005pri"
   "ce\030\001 \001(\005\022\r\n\005goods\030\002 \001(\t\"I\n\021makeOrderResp"
   "onse\022\020\n\010ret_code\030\001 \001(\005\022\020\n\010res_info\030\002 \001(\t"
-  "\022\020\n\010order_id\030\003 \001(\t2;\n\005Order\0222\n\tmakeOrder"
-  "\022\021.makeOrderRequest\032\022.makeOrderResponseB"
-  "\003\200\001\001b\006proto3"
+  "\022\020\n\010order_id\030\003 \001(\t2p\n\005Order\0222\n\tmakeOrder"
+  "\022\021.makeOrderRequest\032\022.makeOrderResponse\022"
+  "3\n\nqueryOrder\022\021.makeOrderRequest\032\022.makeO"
+  "rderResponseB\003\200\001\001b\006proto3"
   ;
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_order_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_order_2eproto = {
-  false, false, 212, descriptor_table_protodef_order_2eproto, "order.proto", 
+  false, false, 265, descriptor_table_protodef_order_2eproto, "order.proto", 
   &descriptor_table_order_2eproto_once, nullptr, 0, 2,
   schemas, file_default_instances, TableStruct_order_2eproto::offsets,
   file_level_metadata_order_2eproto, file_level_enum_descriptors_order_2eproto, file_level_service_descriptors_order_2eproto,
@@ -626,6 +627,14 @@ void Order::makeOrder(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
   done->Run();
 }
 
+void Order::queryOrder(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+                         const ::makeOrderRequest*,
+                         ::makeOrderResponse*,
+                         ::google::protobuf::Closure* done) {
+  controller->SetFailed("Method queryOrder() not implemented.");
+  done->Run();
+}
+
 void Order::CallMethod(const ::PROTOBUF_NAMESPACE_ID::MethodDescriptor* method,
                              ::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                              const ::PROTOBUF_NAMESPACE_ID::Message* request,
@@ -635,6 +644,14 @@ void Order::CallMethod(const ::PROTOBUF_NAMESPACE_ID::MethodDescriptor* method,
   switch(method->index()) {
     case 0:
       makeOrder(controller,
+             ::PROTOBUF_NAMESPACE_ID::internal::DownCast<const ::makeOrderRequest*>(
+                 request),
+             ::PROTOBUF_NAMESPACE_ID::internal::DownCast<::makeOrderResponse*>(
+                 response),
+             done);
+      break;
+    case 1:
+      queryOrder(controller,
              ::PROTOBUF_NAMESPACE_ID::internal::DownCast<const ::makeOrderRequest*>(
                  request),
              ::PROTOBUF_NAMESPACE_ID::internal::DownCast<::makeOrderResponse*>(
@@ -653,6 +670,8 @@ const ::PROTOBUF_NAMESPACE_ID::Message& Order::GetRequestPrototype(
   switch(method->index()) {
     case 0:
       return ::makeOrderRequest::default_instance();
+    case 1:
+      return ::makeOrderRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *::PROTOBUF_NAMESPACE_ID::MessageFactory::generated_factory()
@@ -665,6 +684,8 @@ const ::PROTOBUF_NAMESPACE_ID::Message& Order::GetResponsePrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
+      return ::makeOrderResponse::default_instance();
+    case 1:
       return ::makeOrderResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
@@ -689,6 +710,13 @@ void Order_Stub::makeOrder(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                               ::makeOrderResponse* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(0),
+                       controller, request, response, done);
+}
+void Order_Stub::queryOrder(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+                              const ::makeOrderRequest* request,
+                              ::makeOrderResponse* response,
+                              ::google::protobuf::Closure* done) {
+  channel_->CallMethod(descriptor()->method(1),
                        controller, request, response, done);
 }
 

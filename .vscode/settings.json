@@ -61,6 +61,8 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "semaphore": "cpp"
-    }
+        "semaphore": "cpp",
+        "csignal": "cpp"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

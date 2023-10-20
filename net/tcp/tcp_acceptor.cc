@@ -32,6 +32,7 @@ namespace talon {
 
         socklen_t len = m_local_addr->getSockLen();
         if(bind(m_listenfd, m_local_addr->getSockAddr(), len) != 0) {
+            printf("bind error, errno=%d, error=%s", errno, strerror(errno));
             ERRORLOG("bind error, errno=%d, error=%s", errno, strerror(errno));
             exit(0);
         }

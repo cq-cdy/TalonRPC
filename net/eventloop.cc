@@ -157,11 +157,11 @@ namespace talon {
 
                     if (trigger_event.events & EPOLLIN) {
 
-                         DEBUGLOG("fd %d trigger EPOLLIN event", fd_event->getFd())
+                        DEBUGLOG("fd %d trigger EPOLLIN event", fd_event->getFd())
                         addTask(fd_event->handler(Fd_Event::IN_EVENT));
                     }
                     if (trigger_event.events & EPOLLOUT) {
-                         DEBUGLOG("fd %d trigger EPOLLOUT event", fd_event->getFd())
+                        DEBUGLOG("fd %d trigger EPOLLOUT event", fd_event->getFd())
                         addTask(fd_event->handler(Fd_Event::OUT_EVENT));
                     }
 

@@ -104,13 +104,11 @@ namespace talon {
         }
 
         if (is_close) {
-            //TODO:
             INFOLOG("peer closed, peer addr [%s], clientfd [%d]", m_peer_addr->toString().c_str(), m_fd);
             clear();
             return;
         }
 
-        // TODO: 简单的 echo, 后面补充 RPC 协议解析
         excute();
 
     }
@@ -288,7 +286,7 @@ namespace talon {
     }
 
 
-    int TcpConnection::getFd() {
+    int TcpConnection::getFd() const {
         return m_fd;
     }
 } // talon

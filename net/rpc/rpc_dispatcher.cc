@@ -28,6 +28,9 @@ namespace talon {
         g_rpc_dispatcher = new RpcDispatcher;
         return g_rpc_dispatcher;
     }
+    // 主要是 服务端在执行方法时的准备设置工作，最后一句话才是执行调用的方法
+    // 虽然 写了一个 dispatch 类，其实就说在tcpconnection拿到数据之后
+    // 就实例化 一个 request 和 response，然后CallMethod 
     void RpcDispatcher::dispatch(const AbstractProtocol::s_ptr &request, const AbstractProtocol::s_ptr &response,
                                  talon::TcpConnection * connection) {
         std::shared_ptr<TinyPBProtocol> req_protocol = std::dynamic_pointer_cast<TinyPBProtocol>(request);
@@ -45,15 +48,16 @@ namespace talon {
             return;
         }
 
+        // 根据service_name找到对应的service
         auto it = m_service_map.find(service_name);
         if (it == m_service_map.end()) {
             ERRORLOG("%s | sericve neame[%s] not found", req_protocol->m_msg_id.c_str(), service_name.c_str());
             setTinyPBError(rsp_protocol, ERROR_SERVICE_NOT_FOUND, "service not found");
             return;
         }
-
         service_s_ptr service = (*it).second;
 
+        // 根据method_name找到对应的MethodDescriptor
         const google::protobuf::MethodDescriptor* method = service->GetDescriptor()->FindMethodByName(method_name);
         if (method == nullptr) {
             ERRORLOG("%s | method neame[%s] not found in service[%s]", req_protocol->m_msg_id.c_str(), method_name.c_str(), service_name.c_str());
@@ -61,6 +65,7 @@ namespace talon {
             return;
         }
 
+        // request message 用父类指针指向，实例化的是一个protobuf中自己写的request对象
         google::protobuf::Message* req_msg = service->GetRequestPrototype(method).New();
 
         // 反序列化，将 pb_data 反序列化为 req_msg
@@ -73,8 +78,11 @@ namespace talon {
 
         INFOLOG("%s | get rpc request[%s]", req_protocol->m_msg_id.c_str(), req_msg->ShortDebugString().c_str());
 
+
+        // 实例化一个response message 用父类指针指向，实例化的是一个protobuf中自己写的response对象
         google::protobuf::Message* rsp_msg = service->GetResponsePrototype(method).New();
 
+        // 实例化一个rpc controller
         auto* rpc_controller = new RpcController();
         rpc_controller->SetLocalAddr(connection->getLocalAddr());
         rpc_controller->SetPeerAddr(connection->getPeerAddr());
@@ -83,7 +91,9 @@ namespace talon {
         RunTime::GetRunTime()->m_msgid = req_protocol->m_msg_id;
         RunTime::GetRunTime()->m_method_name = method_name;
 
+        //最终会在发布的业务函数里面被执行
         auto* closure = new RpcClosure(nullptr, [req_msg, rsp_msg, req_protocol, rsp_protocol, connection, rpc_controller, this]() mutable {
+            DEBUGLOG("NOW  in RpcClosure -----------------")
             if (!rsp_msg->SerializeToString(&(rsp_protocol->m_pb_data))) {
                 ERRORLOG("%s | serilize error, origin message [%s]", req_protocol->m_msg_id.c_str(), rsp_msg->ShortDebugString().c_str());
                 setTinyPBError(rsp_protocol, ERROR_FAILED_SERIALIZE, "serilize error");
@@ -98,9 +108,10 @@ namespace talon {
             connection->reply(replay_messages); // 监听写
 
         });
-
+        DEBUGLOG("NOW  in before    service->CallMethod -----------------")
+        // 这里服务端这里的CallMethod 接收的是自己定义的子类指针const ::makeOrderRequest* request,
+        //                   ::makeOrderResponse* response,
         service->CallMethod(method, rpc_controller, req_msg, rsp_msg, closure);
-
     }
 
 
@@ -126,20 +137,16 @@ namespace talon {
 
     }
 
-
     void RpcDispatcher::registerService(const service_s_ptr& service) {
         std::string service_name = service->GetDescriptor()->full_name();
         m_service_map[service_name] = service;
 
     }
-
     void RpcDispatcher::setTinyPBError(const std::shared_ptr<TinyPBProtocol> &msg, int32_t err_code,
                                        const std::string &err_info) {
         msg->m_err_code = err_code;
         msg->m_err_info = err_info;
         msg->m_err_info_len = err_info.length();
     }
-
-
 
 } // talon

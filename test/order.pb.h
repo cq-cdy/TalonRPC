@@ -424,6 +424,10 @@ class Order : public ::PROTOBUF_NAMESPACE_ID::Service {
                        const ::makeOrderRequest* request,
                        ::makeOrderResponse* response,
                        ::google::protobuf::Closure* done);
+  virtual void queryOrder(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+                       const ::makeOrderRequest* request,
+                       ::makeOrderResponse* response,
+                       ::google::protobuf::Closure* done);
 
   // implements Service ----------------------------------------------
 
@@ -454,6 +458,10 @@ class Order_Stub : public Order {
   // implements Order ------------------------------------------
 
   void makeOrder(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+                       const ::makeOrderRequest* request,
+                       ::makeOrderResponse* response,
+                       ::google::protobuf::Closure* done);
+  void queryOrder(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                        const ::makeOrderRequest* request,
                        ::makeOrderResponse* response,
                        ::google::protobuf::Closure* done);

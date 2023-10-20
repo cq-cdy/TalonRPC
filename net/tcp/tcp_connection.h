@@ -46,13 +46,13 @@ namespace talon {
 
         void onWrite();
 
-        void setState(const TcpState state);
+        void setState(TcpState state);
 
         TcpState getState();
 
         void clear();
 
-        int getFd();
+        int getFd() const;
 
         // 服务器主动关闭连接
         void shutdown();

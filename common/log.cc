@@ -283,7 +283,8 @@ namespace talon {
 
             for (auto& i : tmp) {
                 if (!i.empty()) {
-                    fwrite(i.c_str(), 1, i.length(),  logger->m_file_hanlder);
+                    //fwrite(i.c_str(), 1, i.length(),  logger->m_file_hanlder);
+                    printf(i.c_str());
                 }
             }
             fflush(logger->m_file_hanlder);

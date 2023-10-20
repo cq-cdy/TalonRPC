@@ -29,19 +29,34 @@ public:
                    const ::makeOrderRequest* request,
                    ::makeOrderResponse* response,
                    ::google::protobuf::Closure* done) {
+
         APPDEBUGLOG("end sleep 5s");
         if (request->price() < 10) {
             response->set_ret_code(-1);
             response->set_res_info("short balance");
             return;
         }
-        response->set_order_id("20230514");
+        response->set_order_id("20231015");
         APPDEBUGLOG("call makeOrder success");
         if (done) {
             done->Run();
             delete done;
             done = nullptr;
         }
+        DEBUGLOG("NOW  in makeOrder -----------------")
+    }
+
+    void queryOrder(google::protobuf::RpcController* controller,
+                   const ::makeOrderRequest* request,
+                   ::makeOrderResponse* response,
+                   ::google::protobuf::Closure* done){
+
+        if (done) {
+            done->Run();
+            delete done;
+            done = nullptr;
+        }
+        DEBUGLOG("NOW  in queryOrder -----------------")
     }
 
 };
@@ -62,6 +77,7 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<OrderImpl> service = std::make_shared<OrderImpl>();
     talon::RpcDispatcher::GetRpcDispatcher()->registerService(service);
 
+    printf("port = %d\n", talon::Config::GetGlobalConfig()->m_port);
     talon::IPNetAddr::s_ptr addr = std::make_shared<talon::IPNetAddr>("127.0.0.1", talon::Config::GetGlobalConfig()->m_port);
 
     talon::TcpServer tcp_server(addr);

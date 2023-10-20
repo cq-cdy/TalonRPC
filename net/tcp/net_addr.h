@@ -50,6 +50,10 @@ namespace talon {
 
         bool checkValid() override;
 
+        std::string getIp() const;
+
+        uint16_t getPort() const;
+
     private:
         std::string m_ip;
         uint16_t m_port{0};

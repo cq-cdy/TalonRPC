@@ -33,7 +33,7 @@ namespace talon {
 
             try {
                 if (m_cb != nullptr) {
-                    m_cb();
+                    m_cb(); // 用户重写的closure函数
                 }
                 if (m_rpc_interface) {
                     m_rpc_interface.reset();

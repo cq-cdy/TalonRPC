@@ -14,4 +14,7 @@ message makeOrderResponse {
 
 service Order{
     rpc makeOrder(makeOrderRequest) returns (makeOrderResponse);
+    rpc queryOrder(makeOrderRequest) returns (makeOrderResponse);
 }
+
+

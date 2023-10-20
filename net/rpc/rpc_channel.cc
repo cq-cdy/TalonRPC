@@ -17,10 +17,12 @@
 #include "rpc_controller.h"
 #include "tcp/tcp_client.h"
 #include "timer_event.h"
+#include "service_discovery.h"
 
 namespace talon {
     RpcChannel::RpcChannel(NetAddr::s_ptr peer_addr) : m_peer_addr(std::move(peer_addr)) {
         INFOLOG("RpcChannel");
+        // 通过m_peer_addr 来发现 服务所在的地址
     }
 
     RpcChannel::~RpcChannel() {
@@ -44,9 +46,15 @@ namespace talon {
                                 google::protobuf::RpcController *controller, const google::protobuf::Message *request,
                                 google::protobuf::Message *response, google::protobuf::Closure *done) {
 
-
         std::shared_ptr<talon::TinyPBProtocol> req_protocol = std::make_shared<talon::TinyPBProtocol>();
+        
+        //  通过服务发现模块 重置 服务地址。
 
+
+        auto s = serviceDiscovery(method->full_name());
+        m_peer_addr = FindAddr(serviceDiscovery(method->full_name()));
+        printf("method func name is ------------------------%s\n", method->full_name().c_str());
+        m_client = std::make_shared<TcpClient>(m_peer_addr);
         auto *my_controller = dynamic_cast<RpcController *>(controller);
         if (my_controller == nullptr || request == nullptr || response == nullptr) {
             ERRORLOG("failed callmethod, RpcController convert error");
@@ -62,8 +70,7 @@ namespace talon {
             return;
         }
 
-        m_client = std::make_shared<TcpClient>(m_peer_addr);
-
+        //m_client = std::make_shared<TcpClient>(m_peer_addr);
         if (my_controller->GetMsgId().empty()) {
             // 先从 runtime 里面取, 取不到再生成一个
             // 这样的目的是为了实现 msg_id 的透传，假设服务 A 调用了 B，那么同一个 msgid 可以在服务 A 和 B 之间串起来，方便日志追踪
@@ -153,6 +160,8 @@ namespace talon {
                                                      getTcpClient()->getPeerAddr()->toString().c_str(),
                                                      getTcpClient()->getLocalAddr()->toString().c_str());
 
+
+                                             // 注册读回调
                                              getTcpClient()->readMessage(req_protocol->m_msg_id, [this, my_controller](
                                                      const AbstractProtocol::s_ptr& msg) mutable {
                                                  std::shared_ptr<talon::TinyPBProtocol> rsp_protocol = std::dynamic_pointer_cast<talon::TinyPBProtocol>(

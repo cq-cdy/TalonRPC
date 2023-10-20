@@ -40,13 +40,13 @@ namespace talon {
 
     protected:
 
-        const google::protobuf::Message* m_req_base {NULL};
+        const google::protobuf::Message* m_req_base {nullptr};
 
-        google::protobuf::Message* m_rsp_base {NULL};
+        google::protobuf::Message* m_rsp_base {nullptr};
 
-        RpcClosure* m_done {NULL};        // callback
+        RpcClosure* m_done {nullptr};        // callback
 
-        RpcController* m_controller {NULL};
+        RpcController* m_controller {nullptr};
 
 
     };

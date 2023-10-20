@@ -84,8 +84,19 @@ namespace talon {
         printf("LOG -- CONFIG LEVEL[%s], FILE_NAME[%s],FILE_PATH[%s] MAX_FILE_SIZE[%d B], SYNC_INTEVAL[%d ms]\n",
                m_log_level.c_str(), m_log_file_name.c_str(), m_log_file_path.c_str(), m_log_max_file_size, m_log_sync_inteval);
 
-        READ_STR_FROM_XML_NODE(port, server_node);
-        READ_STR_FROM_XML_NODE(io_threads, server_node);
+        TiXmlElement *port_node = server_node->FirstChildElement("port");
+        if (!port_node || !port_node->GetText()) {
+            printf("Start talon server error, failed to read config file %s\n", "port");
+            exit(0);
+        }
+        std::string port_str = std::string(port_node->GetText());
+
+        TiXmlElement *io_threads_node = server_node->FirstChildElement("io_threads");
+        if (!io_threads_node || !io_threads_node->GetText()) {
+            printf("Start talon server error, failed to read config file %s\n", "io_threads");
+            exit(0);
+        }
+        std::string io_threads_str = std::string(io_threads_node->GetText());
 
         m_port = std::atoi(port_str.c_str());
         m_io_threads = std::atoi(io_threads_str.c_str());
@@ -102,7 +113,6 @@ namespace talon {
                 std::string ip = std::string(node->FirstChildElement("ip")->GetText());
                 uint16_t port = std::atoi(node->FirstChildElement("port")->GetText());
                 stub.addr = std::make_shared<IPNetAddr>(ip, port);
-
                 m_rpc_stubs.insert(std::make_pair(stub.name, stub));
             }
         }

@@ -2,11 +2,6 @@
 // Created by cdy on 23-10-20.
 //
 #include <arpa/inet.h>
-#include <ctype.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "string"
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -22,9 +17,10 @@ void sys_error(const char *str) {
     exit(1);
 }
 
-std::string serviceDiscovery(const std::string &service_funcName) {
-
+std::string serviceDiscovery( const std::string& service_funcName) {
+    
     int cfd, ret;
+
     cfd = socket(AF_INET, SOCK_STREAM, 0);
     // 初始化待连接的服务器信息
     struct sockaddr_in serv_addr{};
@@ -39,17 +35,20 @@ std::string serviceDiscovery(const std::string &service_funcName) {
     if (ret != 0) {
         sys_error("connect error");
     }
-    char buf[1024];
-    memcpy(buf,service_funcName.c_str(),service_funcName.length());
-    if(write(cfd, buf, service_funcName.length()) < 0){
+//    memcpy(buf, service_funcName.(), service_funcName.length());
+//    buf[service_funcName.length()] = '\0';
+    ret = write(cfd, service_funcName.c_str(), service_funcName.length());
+    if (ret < 0) {
         sys_error("write error");
     }
-    if(read(cfd, buf, sizeof(buf))<0){
+    char addr_buff[1024];
+    ret = read(cfd, addr_buff, sizeof(addr_buff));
+    if ( ret< 0) {
         sys_error("read error");
-
     }
-    write(STDOUT_FILENO, buf, sizeof(1024));
-    return std::string(buf);
+    addr_buff[ret] = '\0';
+    close(cfd);
+    return addr_buff;
 
 
 }

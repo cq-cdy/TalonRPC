@@ -16,7 +16,7 @@ const int CONTROL_PORT = 9090;
 
 std::map<std::string, std::string> service_map{
     {"Order.makeOrder","127.0.0.1:12345"},
-    {"Order.queryOder","127.0.0.1:12346"}
+    {"Order.queryOrder","127.0.0.1:12346"}
 };
 
 int main() {
@@ -172,27 +172,21 @@ int main() {
                 } else {
                     buffer[byteRead] = '\0'; // 保证字符串结尾有一个null字符s
                     std::string server_name = buffer;
-                    std::string service_addr = service_map[server_name];
-//
-////                    size_t spacePos = command.find(' '); // 使用size_t类型，并且变量名称更清晰
-////
-////                    if(spacePos == std::string::npos) {
-////                        std::cerr << "Invalid command received. Expected space in the command." << std::endl;
-////                        continue; // 如果命令格式不正确，则跳过
-////                    }
-////
-////                    std::string service = command.substr(0, spacePos);
-////                    std::string service_addr = command.substr(spacePos + 1);
-//
-//                    std::cout << "Service: " << service << std::endl;
-//                    std::cout << "Service Address: " << service_addr << std::endl;
+                    std::string service_addr;
+                    if(service_map.find(server_name)==service_map.end()){
+                        service_addr = "unknown host";
+                    }else{
+                        service_addr = service_map[server_name];
 
+                    }
+                    printf("get service name = %s,return addr = %s\n",server_name.c_str(),service_addr.c_str());
                     ssize_t ret = write(events[i].data.fd, service_addr.c_str(), service_addr.length());
                     if (ret < 0) {
                         perror("write error"); // 打印具体的错误信息
                     } else if(static_cast<size_t>(ret) != service_addr.length()) {
                         std::cerr << "Not all bytes written. Expected: " << service_addr.length() << ", Written: " << ret << std::endl;
                     }
+
                 }
             }
         }

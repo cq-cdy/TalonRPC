@@ -50,13 +50,13 @@ public:
                    const ::makeOrderRequest* request,
                    ::makeOrderResponse* response,
                    ::google::protobuf::Closure* done){
-
+        DEBUGLOG("NOW  in queryOrder -----------------")
         if (done) {
             done->Run();
             delete done;
             done = nullptr;
         }
-        DEBUGLOG("NOW  in queryOrder -----------------")
+
     }
 
 };

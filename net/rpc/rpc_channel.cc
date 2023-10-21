@@ -17,8 +17,7 @@
 #include "rpc_controller.h"
 #include "tcp/tcp_client.h"
 #include "timer_event.h"
-#include "service_discovery.h"
-
+#include "service_discovery/service_discovery.h"
 namespace talon {
     RpcChannel::RpcChannel(NetAddr::s_ptr peer_addr) : m_peer_addr(std::move(peer_addr)) {
         INFOLOG("RpcChannel");
@@ -49,10 +48,12 @@ namespace talon {
         std::shared_ptr<talon::TinyPBProtocol> req_protocol = std::make_shared<talon::TinyPBProtocol>();
         
         //  通过服务发现模块 重置 服务地址。
-
-
-        auto s = serviceDiscovery(method->full_name());
-        m_peer_addr = FindAddr(serviceDiscovery(method->full_name()));
+        auto server_addr = serviceDiscovery(method->full_name());
+        if(server_addr == "unknown host"){
+            ERRORLOG("[%s] service not found in Service Discovery",server_addr.c_str());
+            return;
+        }
+        m_peer_addr = FindAddr(server_addr);
         printf("method func name is ------------------------%s\n", method->full_name().c_str());
         m_client = std::make_shared<TcpClient>(m_peer_addr);
         auto *my_controller = dynamic_cast<RpcController *>(controller);

@@ -23,7 +23,7 @@ add_executable(test_rpc_client test_rpc_client.cc order.pb.cc
         ../net/rpc/rpc_interface.h
         ../common/exception.h
         ../common/mutex.h
-        ../net/rpc/service_discovery.h)
+        ../net/service_discovery/service_discovery.h)
 
 
 

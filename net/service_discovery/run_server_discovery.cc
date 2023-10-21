@@ -152,7 +152,6 @@ int main() {
                     close(clientSocket);
                 } else {
                     buffer[bytesRead] = '\0';
-                    // todo Process the command (add, delete, lookup, etc.) and
                     // update serviceMap
                     std::string command = buffer;
                     std::string operator_c =
@@ -240,7 +239,6 @@ int main() {
                     }
                 }
             } else {
-                // todo Handle client connections
                 size_t byteRead =
                     recv(events[i].data.fd, buffer, sizeof(buffer) - 1,
                          0);  // 为'\0'留下一个位置

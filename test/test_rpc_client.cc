@@ -61,6 +61,5 @@ int main() {
 
     // user code
     gerOrderID(100,"apple");
-    gerOrderID(100,"apple");
     return 0;
 }

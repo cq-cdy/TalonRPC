@@ -3,7 +3,7 @@
   <log>
     <log_level>DEBUG</log_level>
     <log_file_name>test_rpc_server_log</log_file_name>
-    <log_file_path>/home/cdy/code/projects/RPC/TalonRPC/log/</log_file_path>
+    <log_file_path>../log/</log_file_path>
     <log_max_file_size>1000000000</log_max_file_size>
     <log_sync_interval>500</log_sync_interval>
   </log>

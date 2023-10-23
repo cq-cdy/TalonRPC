@@ -58,6 +58,8 @@ int main() {
     talon::Config::setServiceCenterMap("../conf/service_center.conf");
     talon::Config::SetGlobalConfig(nullptr); // 客户端传null
     talon::Logger::InitGlobalLogger(0);     // 客户端不需要日志
+
+    // user code
     gerOrderID(100,"apple");
     gerOrderID(100,"apple");
     return 0;

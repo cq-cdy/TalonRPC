@@ -6,7 +6,7 @@
 * 实现RPC请求、日志、定时器、均采用异步方式实现。
 
 -------
-## TaLonRPC:w'w架构图
+## TaLonRPC:架构图
 ![](./img/talonRPC.png)
 ## 目录介绍
 * bin/   可执行程序，即包括服务发现模块，用户自定义RPC服务模块
@@ -26,26 +26,32 @@ C++ 17
 
 ## How to use?
 
-* 1.可更改服务发现模块的运行的端口在net/service_discovery/run_server_discovery.cc中
-```c++
-const int SERVER_PORT = 8080; // 服务运行时端口给客户端使用
-const int CONTROL_PORT = 9090;// 用户操作运行时服务发现模块端口
+* 1.在conf/service_center.conf中 配置服务发现模块的IP以及端口号
+``` cmake
+#服务发现中心所运行在的ip
+serivce_center_ip = 172.16.66.102
+
+#服务发现中心运行在的两个端口
+
+#query_port
+#向服务发现中心查询rpc服务方法所在的哪台主机
+query_port  =   8080  
+#control_port 用于 
+#通过TalonRPC框架提供的第三方API用于实时操作服务中心的端口
+control_port = 9090
 ```
-* 2.可在conf/talon.xml中更改RPC服务节点运行时端口以及IO线程数
+* 2.可在conf/talon.xml中更改RPC服务节点运行时端口以及IO线程数等
 ```html
 ...
- <server>
-    <port>12345</port>
+  <server>
+    <port>9999</port>
     <io_threads>4</io_threads>
+    <local_ip>172.16.66.102</local_ip>
   </server>
+
  ...
 ```
-    并且在net/service_discovery/service_discovery.h中确认端口号
-```C++ 
-// 指定一下服务发现的客户端端口号(很抱歉由于懒惰没多写一些配置文件)
-#define DISCOVERY_PORT 8080
-#define DISCOVERY_IP "127.0.0.1"
-```
+
 * 3.如test/目录的例子那样，用户需要完成protobuf文件，your_rpc_server.cc 和your_rpc_client.cc，然后在根目录中的CMakeLists.txt中末尾补充上用户自己的目录
 ```
 add_subdirectory(test)
@@ -84,11 +90,11 @@ lib目录已经生成静态库
 ```
 -----
 
-* 5.首先启动服务发现模块
+* 5.配置文件配置完成之后首先启动服务发现模块
 ```
-./rpc_service_discovery
+./bin/rpc_service_discovery
 ```
-> 在用户发布自己写的RPC服务之前需说明:服务发现接口runtime API接口:在启动rpc_service_discovery之后可以通过API 任意操作rpc_service_discovery中的数据。也因此可以在线对分布式集群中的节点服务进行灵活的更改，上线与下线；例如net/service_discovery/test_run_time_sd_interface.cc中：
+> 服务发现接口runtime API接口:在启动rpc_service_discovery之后可以通过API 任意操作rpc_service_discovery中的数据。也因此可以在线对分布式集群中的节点服务进行灵活的更改，上线与下线；例如net/service_discovery/test_run_time_sd_interface.cc中：
 ``` C++ 
 #include "run_time_service_discovery_interface.h"
 #include "iostream"
@@ -105,26 +111,42 @@ int main(){
     std::cout <<command.look_up() .get_info() <<std::endl;
 }
 ```
-本例中的rpc_server测试用例代码没有加入上方的如test_run_time_sd_interface.cc中的API，如果需要
-自己的rpc服务一发布就自动向服务发现模块注册，可以如上述API一样，在make之前就加入到test/test_rpc_server.cc的代码中去，本例没有加入，因为可以在服务发布后，任何时候用API手动添加，
-也因此，test用例中的RPC方法，也已经自动写入到服务发现模块中了，即启动rpc_service_discovery时自动注册了测试用例中的RPC方法。经过测试，用户也可以后续通过API手动添加方法名和服务地址。
 
 * 6.在上述配置好之后可以发布用户RPC服务(test/test_rpc_server.cc测试用例)
+``` shell
+bin/rpc_server 
 ```
-bin/rpc_server ../conf/talon.xml
+> 当服务发现中心启动后，服务端运行时会根据用户的RPC方法所部署的节点自动向服务中心注册该RPC方法所在的节点。
+```c++
+// test/test_rpc_server.cc : main()
+talon::Config::SetGlobalConfig("../conf/talon.xml");
+talon::Config::setServiceCenterMap("../conf/service_center.conf");
+talon::Logger::InitGlobalLogger();
+std::shared_ptr<OrderImpl> service = std::make_shared<OrderImpl>();
+talon::RpcDispatcher::GetRpcDispatcher()->registerService(service);
 ```
-> 服务正常启动后会看到：LOG -- CONFIG LEVEL[DEBUG], FILE_NAME[test_rpc_server_log],FILE_PATH[/home/cdy/code/projects/RPC/TalonRPC/log/] MAX_FILE_SIZE[1000000000 B], SYNC_INTEVAL[500 ms]
-Server -- PORT[12345], IO Threads[4]
+
+> 服务正常启动后会看到日志信息：
+```
+LOG -- CONFIG LEVEL[DEBUG], FILE_NAMELOG -- CONFIG LEVEL[DEBUG], FILE_NAME[test_rpc_server_log],FILE_PATH[/home/cdy/code/projects/RPC/TalonRPC/log/] MAX_FILE_SIZE[1000000000 B], SYNC_INTEVAL[500 ms]
+Server -- PORT[9999], IO Threads[4]
 Init log level [DEBUG]
-port = 12345
-[INFO]  [23-10-21 19:31:26.445] [431736:431736] [/home/cdy/code/projects/RPC/TalonRPC/net/eventloop.cc:102]     wakeup fd = 4
+local_ip= 172.16.66.102,port = 9999
+            ...
+[INFO]  [23-10-23 15:46:00.848] [609133:609133] [/home/cdy/code/projects/RPC/TalonRPC/net/eventloop.cc:70]      succ create event loop in thread 609133
+[INFO]  [23-10-23 15:46:00.849] [609133:609133] [/home/cdy/code/projects/RPC/TalonRPC/net/rpc/rpc_dispatcher.cc:175]   **success [Order.makeOrder] register service discovery center : [172.16.66.102:9999]
+[INFO]  [23-10-23 15:46:00.849] [609133:609133] [/home/cdy/code/projects/RPC/TalonRPC/net/rpc/rpc_dispatcher.cc:175]    success [Order.queryOrder] register service discovery center : [172.16.66.102:9999]
 ...
+...
+```
+
+----
 
 * 7.测试用户的rpc_client文件
 ```
 bin/rpc_client
 ```
->说明:客户端会通过第3步的用于客户端的服务发现端口根据请求调用的rpc方法名自动查询该方法所在的节点。因此client用户程序中不需要指明端口号.
+>说明:客户端会通过第1步的用于客户端的服务发现端口根据请求调用的rpc方法名自动查询该方法所在的节点。因此client用户程序中不需要指明端口号.
 
 ----
 ## 高可用重启正在制作中...

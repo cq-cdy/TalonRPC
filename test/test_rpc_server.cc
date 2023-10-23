@@ -51,12 +51,7 @@ class OrderImpl : public Order {
 };
 
 int main(int argc, char* argv[]) {
-//    if (argc != 2) {
-//        printf("Start test_rpc_server error, argc not 2 \n");
-//        printf("Start like this: \n");
-//        printf("./test_rpc_server ../conf/talon.xml \n");
-//        return 0;
-//    }
+
 
     talon::Config::SetGlobalConfig("../conf/talon.xml");
     talon::Config::setServiceCenterMap("../conf/service_center.conf");
@@ -64,6 +59,7 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<OrderImpl> service = std::make_shared<OrderImpl>();
     talon::RpcDispatcher::GetRpcDispatcher()->registerService(service);
 
+    // user code
     printf("local_ip= %s,port = %d\n", talon::Config::GetGlobalConfig()->m_local_ip.c_str(), talon::Config::GetGlobalConfig()->m_port);
     talon::IPNetAddr::s_ptr addr = std::make_shared<talon::IPNetAddr>(
        talon::Config::GetGlobalConfig()->m_local_ip, talon::Config::GetGlobalConfig()->m_port);

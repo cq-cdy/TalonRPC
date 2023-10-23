@@ -40,6 +40,9 @@ namespace talon{
         void addTimerEvent(const TimerEvent::s_ptr& event);
 
         bool isLooping() const;
+        bool m_stop_flag {false};
+        bool m_is_looping {false};
+
 
     public:
         static Eventloop* GetCurrentEventLoop();
@@ -61,8 +64,6 @@ namespace talon{
 
         WakeUpFdEvent* m_wakeup_fd_event {nullptr};
 
-        bool m_stop_flag {false};
-
         std::set<int> m_listen_fds;
 
         std::queue<std::function<void()>> m_pending_tasks;
@@ -71,7 +72,6 @@ namespace talon{
 
         Timer* m_timer {nullptr};
 
-        bool m_is_looping {false};
 
     };
 

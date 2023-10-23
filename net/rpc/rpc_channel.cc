@@ -18,6 +18,7 @@
 #include "tcp/tcp_client.h"
 #include "timer_event.h"
 #include "service_discovery/service_discovery.h"
+#include "config.h"
 namespace talon {
     RpcChannel::RpcChannel(NetAddr::s_ptr peer_addr) : m_peer_addr(std::move(peer_addr)) {
         INFOLOG("RpcChannel");
@@ -48,7 +49,9 @@ namespace talon {
         std::shared_ptr<talon::TinyPBProtocol> req_protocol = std::make_shared<talon::TinyPBProtocol>();
         
         //  通过服务发现模块 重置 服务地址。
-        auto server_addr = serviceDiscovery(method->full_name());
+        std:: string serivce_center_ip = talon::Config::getServiceCenterMap()["serivce_center_ip"];
+        int query_port = std::atoi(Config::getServiceCenterMap()["query_port"].c_str());
+        auto server_addr = serviceDiscovery(method->full_name(),serivce_center_ip,query_port);
         if(server_addr == "unknown host"){
             ERRORLOG("[%s] service not found in Service Discovery",server_addr.c_str());
             return;

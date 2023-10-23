@@ -9,16 +9,18 @@
 #include <iostream>
 #include <map>
 #include <string>
-
-const int MAX_EVENTS = 10;
-const int SERVER_PORT = 8080;
-const int CONTROL_PORT = 9090;
+#include "config_reader.h"
+ int MAX_EVENTS = 100;
+ int SERVER_PORT = 8080;
+ int CONTROL_PORT = 9090;
 
 std::map<std::string, std::string> service_map;
-//    {"Order.makeOrder", "127.0.0.1:12345"},
-//    {"Order.queryOrder", "127.0.0.1:12346"}};
 
 int main() {
+    ConfigReader readr("/home/cdy/code/projects/RPC/TalonRPC/conf/service_center.conf");
+    SERVER_PORT = std::atoi(readr.getMap()["query_port"].c_str());
+    CONTROL_PORT = std::atoi(readr.getMap()["control_port"].c_str());
+    printf("service center start ,query port:%d,control port:%d\n",SERVER_PORT,CONTROL_PORT);
     int serverSocket, controlSocket, clientSocket;
     struct sockaddr_in serverAddr {
     }, controlAddr{}, clientAddr{};

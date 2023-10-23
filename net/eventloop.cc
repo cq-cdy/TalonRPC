@@ -189,6 +189,7 @@ namespace talon {
 
     void Eventloop::stop() {
         m_stop_flag = true;
+        m_is_looping = false;
         wakeup();
     }
 
@@ -202,7 +203,33 @@ namespace talon {
          * 如果 b
          */
         if (isInLoopThread()) {
-            ADD_TO_EPOLL();
+            //ADD_TO_EPOLL();
+            auto it = m_listen_fds.find(event->getFd());
+            int op =EPOLL_CTL_ADD;
+            if (it != m_listen_fds.end()) { op = 3; }
+            epoll_event tmp = event->getEpollEvent();
+            if (talon::Logger::GetGlobalLogger()->getLogLevel() <= talon::Info) {
+                talon::Logger::GetGlobalLogger()->pushLog(
+                        talon::LogEvent(talon::LogLevel::Info).toString() + "[" + std::string("_file_name_") + ":" +
+                        std::to_string(205) + "]\t" + talon::formatString("epoll_event.events = %d", (int) tmp.events) + "\n");
+            };
+            int rt = epoll_ctl(m_epoll_fd, op, event->getFd(), &tmp);
+            if (rt == -1) {
+                if (talon::Logger::GetGlobalLogger()->getLogLevel() <= talon::Error) {
+                    talon::Logger::GetGlobalLogger()->pushLog(
+                            talon::LogEvent(talon::LogLevel::Error).toString() + "[" + std::string("_file_name_") + ":" +
+                            std::to_string(205) + "]\t" +
+                            talon::formatString("failed epoll_ctl when add fd, errno=%d, error=%s", (*__errno_location()),
+                                                strerror((*__errno_location()))) + "\n");
+                };
+            }
+            m_listen_fds.insert(event->getFd());
+            if (talon::Logger::GetGlobalLogger()->getLogLevel() &&
+                talon::Logger::GetGlobalLogger()->getLogLevel() <= talon::Debug) {
+                talon::Logger::GetGlobalLogger()->pushLog(
+                        talon::LogEvent(talon::LogLevel::Debug).toString() + "[" + std::string("_file_name_") + ":" +
+                        std::to_string(205) + "]\t" + talon::formatString("add event success, fd[%d]", event->getFd()) + "\n");
+            }
         } else {
             auto cb = [this, event]() {
                 ADD_TO_EPOLL();

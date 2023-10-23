@@ -3,6 +3,7 @@
 //
 #include "tinyxml/tinyxml.h"
 #include "config.h"
+#include "config_reader.h"
 
 #define READ_XML_NODE(name, parent) \
 TiXmlElement* name##_node = parent->FirstChildElement(#name); \
@@ -26,14 +27,14 @@ if (!name##_node) { \
 namespace talon {
 
 
-    static Config* g_config = nullptr;
+    static Config *g_config = nullptr;
+    std::unordered_map<std::string, std::string> Config::service_center_map = {};
 
-
-    Config* Config::GetGlobalConfig() {
+    Config *Config::GetGlobalConfig() {
         return g_config;
     }
 
-    void Config::SetGlobalConfig(const char* xmlfile) {
+    void Config::SetGlobalConfig(const char *xmlfile) {
         if (g_config == nullptr) {
             if (xmlfile != nullptr) {
                 g_config = new Config(xmlfile);
@@ -56,12 +57,13 @@ namespace talon {
 
     }
 
-    Config::Config(const char* xmlfile) {
+    Config::Config(const char *xmlfile) {
         m_xml_document = new TiXmlDocument();
 
         bool rt = m_xml_document->LoadFile(xmlfile);
         if (!rt) {
-            printf("Start talon server error, failed to read config file %s, error info[%s] \n", xmlfile, m_xml_document->ErrorDesc());
+            printf("Start talon server error, failed to read config file %s, error info[%s] \n", xmlfile,
+                   m_xml_document->ErrorDesc());
             exit(0);
         }
 
@@ -78,11 +80,12 @@ namespace talon {
         m_log_level = log_level_str;
         m_log_file_name = log_file_name_str;
         m_log_file_path = log_file_path_str;
-        m_log_max_file_size = std::atoi(log_max_file_size_str.c_str()) ;
+        m_log_max_file_size = std::atoi(log_max_file_size_str.c_str());
         m_log_sync_inteval = std::atoi(log_sync_interval_str.c_str());
 
         printf("LOG -- CONFIG LEVEL[%s], FILE_NAME[%s],FILE_PATH[%s] MAX_FILE_SIZE[%d B], SYNC_INTEVAL[%d ms]\n",
-               m_log_level.c_str(), m_log_file_name.c_str(), m_log_file_path.c_str(), m_log_max_file_size, m_log_sync_inteval);
+               m_log_level.c_str(), m_log_file_name.c_str(), m_log_file_path.c_str(), m_log_max_file_size,
+               m_log_sync_inteval);
 
         TiXmlElement *port_node = server_node->FirstChildElement("port");
         if (!port_node || !port_node->GetText()) {
@@ -98,14 +101,22 @@ namespace talon {
         }
         std::string io_threads_str = std::string(io_threads_node->GetText());
 
+        TiXmlElement *local_ip_node = server_node->FirstChildElement("local_ip");
+        if (!local_ip_node || !local_ip_node->GetText()) {
+            printf("Start talon server error, failed to read config file %s\n", "local_ip");
+            exit(0);
+        }
+        std::string local_ip_str = std::string(local_ip_node->GetText());
+
         m_port = std::atoi(port_str.c_str());
         m_io_threads = std::atoi(io_threads_str.c_str());
+        m_local_ip = local_ip_str;
 
-
-        TiXmlElement* stubs_node = root_node->FirstChildElement("stubs");
+        TiXmlElement *stubs_node = root_node->FirstChildElement("stubs");
 
         if (stubs_node) {
-            for (TiXmlElement* node = stubs_node->FirstChildElement("rpc_server"); node; node = node->NextSiblingElement("rpc_server")) {
+            for (TiXmlElement *node = stubs_node->FirstChildElement(
+                    "rpc_server"); node; node = node->NextSiblingElement("rpc_server")) {
                 RpcStub stub;
                 stub.name = std::string(node->FirstChildElement("name")->GetText());
                 stub.timeout = std::atoi(node->FirstChildElement("timeout")->GetText());
@@ -118,9 +129,17 @@ namespace talon {
         }
 
 
-
         printf("Server -- PORT[%d], IO Threads[%d]\n", m_port, m_io_threads);
 
+    }
+
+    void Config::setServiceCenterMap(const std::string &conf_path) {
+        ConfigReader reader(conf_path);
+        service_center_map = reader.getMap();
+    }
+
+    std::unordered_map<std::string, std::string> Config::getServiceCenterMap() {
+        return service_center_map;
     }
 
 

@@ -6,22 +6,20 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-// 服务发现的地址和端口
-#define DISCOVERY_PORT 8080
-#define DISCOVERY_IP "127.0.0.1"
+
 void sys_error(const char *str) {
     perror(str);
     exit(1);
 }
 
-std::string serviceDiscovery( const std::string& service_funcName) {
+std::string serviceDiscovery( const std::string& service_funcName,const std::string& service_center_ip,int query_port) {
     int cfd, ret;
 
     cfd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in serv_addr{};
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(DISCOVERY_PORT);
-    ret = inet_pton(AF_INET, DISCOVERY_IP, &serv_addr.sin_addr.s_addr);
+    serv_addr.sin_port = htons(query_port);
+    ret = inet_pton(AF_INET, service_center_ip.c_str(), &serv_addr.sin_addr.s_addr);
     if (cfd == -1) {
         sys_error("socket error");
     }

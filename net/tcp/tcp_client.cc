@@ -17,6 +17,11 @@
 namespace talon{
     TcpClient::TcpClient(const NetAddr::s_ptr& peer_addr) : m_peer_addr(peer_addr) {
         m_event_loop = Eventloop::GetCurrentEventLoop();
+        if(m_event_loop->m_stop_flag){
+            /* 修复了在同一*/
+            m_event_loop->m_stop_flag = false;
+            m_event_loop->m_is_looping = false;
+        }
         m_fd = socket(peer_addr->getFamily(), SOCK_STREAM, 0);
 
         if (m_fd < 0) {
@@ -83,8 +88,7 @@ namespace talon{
                                    }
                 );
                 m_event_loop->addEpollEvent(m_fd_event);
-
-                if (!m_event_loop->isLooping()) {
+               if (!m_event_loop->isLooping()) {
                     m_event_loop->loop();
                 }
             } else {
@@ -115,7 +119,6 @@ namespace talon{
         m_connection->listenWrite();
 
     }
-
 
 // 异步的读取 message
 // 如果读取 message 成功，会调用 done 函数， 函数的入参就是 message 对象

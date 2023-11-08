@@ -1,6 +1,6 @@
 # TaLonRPC:基于epoll+protobuf的分布式高可用RPC框架
 
-* 支持分布式部署
+* **支持分布式部署**
 * 手写服务发现(stand alone)模块(提供运行时服务发现模块交互API)
 * 实现节点宕机重启的高可用功能
 * 实现RPC请求、日志、定时器、均采用异步方式实现。
@@ -134,7 +134,7 @@ Init log level [DEBUG]
 local_ip= 172.16.66.102,port = 9999
             ...
 [INFO]  [23-10-23 15:46:00.848] [609133:609133] [/home/cdy/code/projects/RPC/TalonRPC/net/eventloop.cc:70]      succ create event loop in thread 609133
-[INFO]  [23-10-23 15:46:00.849] [609133:609133] [/home/cdy/code/projects/RPC/TalonRPC/net/rpc/rpc_dispatcher.cc:175]   **success [Order.makeOrder] register service discovery center : [172.16.66.102:9999]
+[INFO]  [23-10-23 15:46:00.849] [609133:609133] [/home/cdy/code/projects/RPC/TalonRPC/net/rpc/rpc_dispatcher.cc:175]   success [Order.makeOrder] register service discovery center : [172.16.66.102:9999]
 [INFO]  [23-10-23 15:46:00.849] [609133:609133] [/home/cdy/code/projects/RPC/TalonRPC/net/rpc/rpc_dispatcher.cc:175]    success [Order.queryOrder] register service discovery center : [172.16.66.102:9999]
 ...
 ...
@@ -149,6 +149,30 @@ bin/rpc_client
 >说明:客户端会通过第1步的用于客户端的服务发现端口根据请求调用的rpc方法名自动查询该方法所在的节点。因此client用户程序中不需要指明端口号.
 
 ----
-## 高可用重启正在制作中...
+## 设置RPC服务发布方的高可用模式
+
+高可用:当服务进程崩溃时，可自动重启RPC服务，可设置重启次数，若超过重启次数，若再度崩溃，则无法重启
+```c++
+#include "high_availability.h"
+...
+int main(int argc,char* argv[]){
+    ... // 日志等其他信息的初始化
+    
+    auto start_service_func = [&]() {
+        talon::IPNetAddr::s_ptr addr = std::make_shared<talon::IPNetAddr>(
+                talon::Config::GetGlobalConfig()->m_local_ip,
+                talon::Config::GetGlobalConfig()->m_port);
+        talon::TcpServer tcp_server(addr);
+        tcp_server.start();
+    };
+    // 开启高可用模式
+    HighAvai* high_avai = HighAvai::getInstance(start_service_func);
+    high_avai->setRestartCount(10/* defalut count = 5；*/);
+    high_avai->start(argc,argv);
+    return 0;
+    
+}
+
+```
 
 

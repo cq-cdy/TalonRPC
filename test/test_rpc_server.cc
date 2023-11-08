@@ -2,22 +2,20 @@
 // Created by cdy on 23-10-14.
 //
 
-#include <unistd.h>
-
 #include <memory>
 #include <string>
 
-
 #include "config.h"
 #include "google/protobuf/service.h"
+#include "high_availability.h"
 #include "log.h"
 #include "order.pb.h"
 #include "rpc/rpc_dispatcher.h"
 #include "tcp/net_addr.h"
 #include "tcp/tcp_server.h"
-#include "config_reader.h"
+
 class OrderImpl : public Order {
-   public:
+public:
     void makeOrder(google::protobuf::RpcController* controller,
                    const ::makeOrderRequest* request,
                    ::makeOrderResponse* response,
@@ -51,21 +49,33 @@ class OrderImpl : public Order {
 };
 
 int main(int argc, char* argv[]) {
-
-
     talon::Config::SetGlobalConfig("../conf/talon.xml");
     talon::Config::setServiceCenterMap("../conf/service_center.conf");
     talon::Logger::InitGlobalLogger();
     std::shared_ptr<OrderImpl> service = std::make_shared<OrderImpl>();
     talon::RpcDispatcher::GetRpcDispatcher()->registerService(service);
-
-    // user code
-    printf("local_ip= %s,port = %d\n", talon::Config::GetGlobalConfig()->m_local_ip.c_str(), talon::Config::GetGlobalConfig()->m_port);
     talon::IPNetAddr::s_ptr addr = std::make_shared<talon::IPNetAddr>(
-       talon::Config::GetGlobalConfig()->m_local_ip, talon::Config::GetGlobalConfig()->m_port);
+            talon::Config::GetGlobalConfig()->m_local_ip,
+            talon::Config::GetGlobalConfig()->m_port);
+    printf("local_ip= %s,port = %d\n",
+           talon::Config::GetGlobalConfig()->m_local_ip.c_str(),
+           talon::Config::GetGlobalConfig()->m_port);
 
-    talon::TcpServer tcp_server(addr);
-    tcp_server.start();
+    auto start_service_func = [&]() {
+        talon::IPNetAddr::s_ptr addr = std::make_shared<talon::IPNetAddr>(
+                talon::Config::GetGlobalConfig()->m_local_ip,
+                talon::Config::GetGlobalConfig()->m_port);
+        talon::TcpServer tcp_server(addr);
+        tcp_server.start();
+    };
+
+    // if you need high_availability service ,then like this :
+            HighAvai* high_avai = HighAvai::getInstance(start_service_func);
+            high_avai->setRestartCount(10/* defalut count = 5；*/);
+            high_avai->start(argc,argv);
+
+   //    if you  don't need ,just like this :
+    //       start_service_func();
 
     return 0;
 }

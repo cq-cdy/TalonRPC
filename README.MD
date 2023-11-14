@@ -21,7 +21,7 @@
 ```
 ubuntu  Ubuntu 20.04.6 LTS
 C++ 17
-依赖库：inyxml pthread protobuf
+依赖库：tinyxml pthread protobuf
 ```
 
 ## How to use?
